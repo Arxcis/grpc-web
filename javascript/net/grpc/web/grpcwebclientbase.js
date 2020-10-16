@@ -23,9 +23,9 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-import { HttpCors } from "goog.net.rpc.HttpCors"; // @TODO resolve
-import { XhrIo } from "goog.net.XhrIo"; // @TODO resolve
-import { googCrypt } from "goog.crypt.base64"; // @TODO resolve
+import HttpCors from "goog.net.rpc.HttpCors"; // @TODO How do we even 'esm' this import?
+import XhrIo from "goog.net.XhrIo"; // @TODO
+import googCrypt from "goog.crypt.base64"; // @TODO
 
 import { AbstractClientBase } from "./abstractclientbase.js";
 import { ClientOptions } from "./clientoptions.js";

@@ -26,11 +26,11 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-import { ErrorCode } from "goog.net.ErrorCode"; // @TODO resolve
-import { EventType } from "goog.net.EventType"; // @TODO resolve
- import { XhrIo } from "goog.net.XhrIo"; // @TODO resolve
-import { events } from "goog.events"; // @TODO resolve
-import { NodeReadableStream } from "goog.net.streams.NodeReadableStream"; // @TODO resolve
+import ErrorCode from "goog.net.ErrorCode"; // @TODO How do we even 'esm' this import?
+import EventType from "goog.net.EventType"; // @TODO
+import XhrIo from "goog.net.XhrIo"; // @TODO
+import events from "goog.events"; // @TODO
+import NodeReadableStream from "goog.net.streams.NodeReadableStream"; // @TODO
 
 import { ClientReadableStream } from "./clientreadablestream.js";
 import { GrpcWebError } from "./error.js";

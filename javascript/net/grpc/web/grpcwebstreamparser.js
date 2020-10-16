@@ -37,8 +37,8 @@
  *
  * Result: [ { 0x00 : <message1 }, { 0x00 : <message2> }, { 0x80 : trailers } ]
  */
-import { StreamParser } from "goog.net.streams.StreamParser"; // @TODO resolve
-import { asserts } from "goog.asserts"; // @TODO resolve
+import StreamParser from "goog.net.streams.StreamParser"; // @TODO How do we even 'esm' this import?
+import asserts from "goog.asserts"; // @TODO
 
 /**
  * The default grpc-web stream parser.
