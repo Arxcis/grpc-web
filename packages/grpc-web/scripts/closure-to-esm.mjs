@@ -1,4 +1,3 @@
-import { write } from "fs";
 /**
  * Build a distribution of grpc-web that is compatible with ES Modules (esm for short).
  *
@@ -11,24 +10,37 @@ import { write } from "fs";
  * import * as grpcWeb from "https://cdn.jsdelivr.net/npm/grpc-web@1.2.1/index.esm.js"
  * ```
  */
-import { writeFile, mkdir, readFile, rmdir } from "fs/promises";
+import { writeFile, mkdir, readFile, rmdir, readdir } from "fs/promises";
 import { join } from "path";
 import { exec } from "child_process";
 
 const INCLUDE_DIRS = [
   "../../javascript/net/grpc/web",
   "../../third_party/closure-library/closure/goog/",
-].join(" ");
+];
 const ENTRYPOINT = "./exports.js";
 const OUT_DIR = "./esm";
 
 await initOutdir(OUT_DIR);
-let seen = new Set();
-await traverseAndCopy(ENTRYPOINT, seen, OUT_DIR, INCLUDE_DIRS);
+await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+await rewrite(OUT_DIR);
 
-// Avoid reading the same file twice
+// @procedure
+async function rewrite(OUT_DIR) {
+  const files = await readdir(OUT_DIR);
 
-// traverseAndCopy
+  await Promise.all(
+    files.map(async (it) => {
+      // rewrite module
+      // rewrite provide
+      // rewrite require
+
+      log("Rewritten", it);
+    })
+  );
+}
+
+// @procedure
 async function traverseAndCopy(
   filepath,
   seen,
@@ -66,9 +78,11 @@ async function traverseAndCopy(
 
     let requireFile;
     try {
-      const grepModule = `grep -iRl "^goog.module('${requireName}')\\|^goog.provide('${requireName}')" ${INCLUDE_DIRS}`;
+      const grep = `grep -iRl "^goog.module('${requireName}')\\|^goog.provide('${requireName}')" ${INCLUDE_DIRS.join(
+        " "
+      )}`;
 
-      requireFile = await execShellCommand(grepModule);
+      requireFile = await execShellCommand(grep);
     } catch (err) {
       log("Did not find module", requireName);
       continue;
@@ -84,7 +98,7 @@ async function traverseAndCopy(
   }
 }
 
-// initOutdir
+// @procedure
 async function initOutdir(OUT_DIR) {
   await rmdir(OUT_DIR, { recursive: true })
     .then(() => log(`rmdir ${OUT_DIR}`))
@@ -92,10 +106,12 @@ async function initOutdir(OUT_DIR) {
   await mkdir(OUT_DIR).then(() => log(`mkdir ${OUT_DIR}`));
 }
 
+// @function with side effect
 function log(...msgs) {
   console.log("[closure-to-esm.mjs]", ...msgs);
 }
 
+// @function with side effect
 function execShellCommand(cmd) {
   return new Promise((resolve, reject) => {
     exec(cmd, (error, stdout, stderr) => {
