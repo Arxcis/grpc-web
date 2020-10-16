@@ -41,6 +41,9 @@ async function rewrite(OUT_DIR) {
 }
 
 // @procedure
+// - Copying all dependencies of ENTRYPOINT recursivly into OUT_DIR
+// - Copying into OUT_DIR results in a flat file hierarchy. No sub-folders
+// - Filenames in OUT_DIR get the module name.
 async function traverseAndCopy(
   filepath,
   seen,
@@ -64,7 +67,7 @@ async function traverseAndCopy(
   await writeFile(join(OUT_DIR, `${moduleName}.js`), filestr);
 
   const requireMatches = filestr.matchAll(
-    /^((const|var) ([a-zA-Z]+) = )?goog.require\('([.a-zA-Z]+)'\)/gm
+    /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm
   );
 
   const requireNames = [...requireMatches].map((it) => it.pop());
