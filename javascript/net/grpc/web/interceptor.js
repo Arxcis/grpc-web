@@ -10,13 +10,9 @@
  * UnaryInterceptor for PromiseClients.
  */
 
-goog.module('grpc.web.Interceptor');
-goog.module.declareLegacyNamespace();
-
-
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
-const Request = goog.require('grpc.web.Request');
-const UnaryResponse = goog.require('grpc.web.UnaryResponse');
+import { ClientReadableStream } from "./clientreadablestream.js"
+import { Request } from "./request.js"
+import { UnaryResponse } from "./unaryresponse"
 
 /**
  * Interceptor for RPC calls with response type `UnaryResponse`.
@@ -33,7 +29,7 @@ const UnaryResponse = goog.require('grpc.web.UnaryResponse');
  * </pre>
  * @interface
  */
-const UnaryInterceptor = function() {};
+export const UnaryInterceptor = function() {};
 
 /**
  * @export
@@ -58,7 +54,7 @@ UnaryInterceptor.prototype.intercept = function(request, invoker) {};
  * ClientReadableStream.
  * @interface
  */
-const StreamInterceptor = function() {};
+export const StreamInterceptor = function() {};
 
 /**
  * @export
@@ -70,9 +66,3 @@ const StreamInterceptor = function() {};
  * @return {!ClientReadableStream<RESPONSE>}
  */
 StreamInterceptor.prototype.intercept = function(request, invoker) {};
-
-
-exports = {
-  UnaryInterceptor,
-  StreamInterceptor
-};

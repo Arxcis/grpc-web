@@ -3,17 +3,13 @@
  * calls.
  */
 
-goog.module('grpc.web.ClientUnaryCallImpl');
-
-goog.module.declareLegacyNamespace();
-
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
+import { ClientReadableStream } from "./clientreadablestream.js";
 
 /**
  * @implements {ClientReadableStream<RESPONSE>}
  * @template RESPONSE
  */
-class ClientUnaryCallImpl {
+export class ClientUnaryCallImpl {
   /**
    * @param {!ClientReadableStream<RESPONSE>} stream
    */
@@ -47,5 +43,3 @@ class ClientUnaryCallImpl {
     this.stream.cancel();
   }
 }
-
-exports = ClientUnaryCallImpl;

@@ -26,25 +26,19 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.GrpcWebClientReadableStream');
+import { ErrorCode } from "goog.net.ErrorCode"; // @TODO resolve
+import { EventType } from "goog.net.EventType"; // @TODO resolve
+import { XhrIo } from "goog.net.XhrIo"; // @TODO resolve
+import { events } from "goog.events"; // @TODO resolve
+import { googCrypt } from "goog.crypt.base64"; // @TODO resolve
+import { googString } from "goog.string"; // @TODO resolve
 
-goog.module.declareLegacyNamespace();
-
-
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
-const ErrorCode = goog.require('goog.net.ErrorCode');
-const EventType = goog.require('goog.net.EventType');
-const GrpcWebError = goog.require('grpc.web.Error');
-const GrpcWebStreamParser = goog.require('grpc.web.GrpcWebStreamParser');
-const StatusCode = goog.require('grpc.web.StatusCode');
-const XhrIo = goog.require('goog.net.XhrIo');
-const events = goog.require('goog.events');
-const googCrypt = goog.require('goog.crypt.base64');
-const googString = goog.require('goog.string');
-const {GenericTransportInterface} = goog.require('grpc.web.GenericTransportInterface');
-const {Status} = goog.require('grpc.web.Status');
-
-
+import { ClientReadableStream } from "./clientreadablestream.js"
+import { GrpcWebError } from "./error.js"
+import { GrpcWebStreamParser } from "./grpcwebstreamparser.js"
+import { StatusCode } from "./statuscode.js"
+import { GenericTransportInterface } from "./generictransportinterface.js"
+import { Status } from "./status.js"
 
 const GRPC_STATUS = 'grpc-status';
 const GRPC_STATUS_MESSAGE = 'grpc-message';
@@ -61,7 +55,7 @@ const EXCLUDED_RESPONSE_HEADERS =
  * @final
  * @unrestricted
  */
-class GrpcWebClientReadableStream {
+export class GrpcWebClientReadableStream {
   /**
    * @param {!GenericTransportInterface} genericTransportInterface The
    *   GenericTransportInterface
@@ -441,7 +435,3 @@ class GrpcWebClientReadableStream {
     }
   }
 }
-
-
-
-exports = GrpcWebClientReadableStream;

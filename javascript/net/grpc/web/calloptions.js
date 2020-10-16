@@ -2,14 +2,11 @@
  * @fileoverview grpc.web.CallOptions
  */
 
-goog.module('grpc.web.CallOptions');
-goog.module.declareLegacyNamespace();
-
 /**
  * The collection of runtime options for a new RPC call.
  * @unrestricted
  */
-class CallOptions {
+export class CallOptions {
   /**
    * @param {!Object<string, !Object>=} options
    */
@@ -60,7 +57,3 @@ class CallOptions {
     return Object.keys(this.properties_);
   }
 }
-
-
-
-exports = CallOptions;

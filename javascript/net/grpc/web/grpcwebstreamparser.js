@@ -37,22 +37,15 @@
  *
  * Result: [ { 0x00 : <message1 }, { 0x00 : <message2> }, { 0x80 : trailers } ]
  */
-goog.module('grpc.web.GrpcWebStreamParser');
-
-goog.module.declareLegacyNamespace();
-
-
-const StreamParser = goog.require('goog.net.streams.StreamParser');
-const asserts = goog.require('goog.asserts');
-
-
+import { StreamParser } from "goog.net.streams.StreamParser"; // @TODO resolve
+import { asserts } from "goog.asserts"; // @TODO resolve
 
 /**
  * The default grpc-web stream parser.
  * @implements {StreamParser}
  * @final
  */
-class GrpcWebStreamParser {
+export class GrpcWebStreamParser {
   constructor() {
     /**
      * The current error message, if any.
@@ -288,7 +281,3 @@ Parser.prototype.error_ = function(inputBytes, pos, errorMsg) {
       'With input:\n' + inputBytes;
   throw new Error(this.errorMessage_);
 };
-
-
-
-exports = GrpcWebStreamParser;

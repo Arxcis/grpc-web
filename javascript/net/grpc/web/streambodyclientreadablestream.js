@@ -26,23 +26,17 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.StreamBodyClientReadableStream');
+import { ErrorCode } from "goog.net.ErrorCode"; // @TODO resolve
+import { EventType } from "goog.net.EventType"; // @TODO resolve
+ import { XhrIo } from "goog.net.XhrIo"; // @TODO resolve
+import { events } from "goog.events"; // @TODO resolve
+import { NodeReadableStream } from "goog.net.streams.NodeReadableStream"; // @TODO resolve
 
-goog.module.declareLegacyNamespace();
-
-
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
-const ErrorCode = goog.require('goog.net.ErrorCode');
-const EventType = goog.require('goog.net.EventType');
-const GrpcWebError = goog.requireType('grpc.web.Error');
-const NodeReadableStream = goog.require('goog.net.streams.NodeReadableStream');
-const StatusCode = goog.require('grpc.web.StatusCode');
-const XhrIo = goog.require('goog.net.XhrIo');
-const events = goog.require('goog.events');
-const {GenericTransportInterface} = goog.require('grpc.web.GenericTransportInterface');
-const {Status} = goog.require('grpc.web.Status');
-
-
+import { ClientReadableStream } from "./clientreadablestream.js";
+import { GrpcWebError } from "./error.js";
+import { StatusCode } from "./statuscode.js";
+import { GenericTransportInterface } from "./generictransportinterface.js";
+import { Status } from "./status.js";
 
 /**
  * A stream that the client can read from. Used for calls that are streaming
@@ -52,7 +46,7 @@ const {Status} = goog.require('grpc.web.Status');
  * @final
  * @unrestricted
  */
-class StreamBodyClientReadableStream {
+export class StreamBodyClientReadableStream {
   /**
    * @param {!GenericTransportInterface} genericTransportInterface The
    *   GenericTransportInterface
@@ -398,7 +392,3 @@ class StreamBodyClientReadableStream {
     }
   }
 }
-
-
-
-exports = StreamBodyClientReadableStream;

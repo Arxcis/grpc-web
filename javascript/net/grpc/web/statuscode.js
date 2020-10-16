@@ -22,14 +22,13 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.StatusCode');
 
-/**
+ /**
  * gRPC Status Codes
  * See: https://github.com/grpc/grpc/blob/master/include/grpc%2B%2B/impl/codegen/status_code_enum.h
  * @enum {number}
  */
-const StatusCode = {
+export const StatusCode = {
   // Not an error; returned on success.
   'OK': 0,
 
@@ -176,6 +175,3 @@ StatusCode.fromHttpStatus = function(http_status) {
       return StatusCode.UNKNOWN;
   }
 };
-
-
-exports = StatusCode;

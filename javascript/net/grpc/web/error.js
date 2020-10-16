@@ -22,15 +22,10 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.Error');
-
-goog.module.declareLegacyNamespace();
-
-const Metadata = goog.require('grpc.web.Metadata');
 
 
 /** @record */
-function Error() {}
+export function Error() {}
 
 /** @export {(number|undefined)} */
 Error.prototype.code;
@@ -40,5 +35,3 @@ Error.prototype.message;
 
 /** @export {(?Metadata|undefined)} */
 Error.prototype.metadata;
-
-exports = Error;

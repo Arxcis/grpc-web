@@ -22,22 +22,17 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.AbstractClientBase');
-
-goog.module.declareLegacyNamespace();
-
-
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
-const Error = goog.require('grpc.web.Error');
-const MethodDescriptor = goog.require('grpc.web.MethodDescriptor');
-const MethodType = goog.require('grpc.web.MethodType');
+import { ClientReadableStream } from "./clientreadablestream.js";
+import { Error } from "./error.js";
+import { MethodDescriptor } from "./methoddescriptor.js";
+import { MethodType } from "./methodtype.js";
 
 
 /**
  * This interface represents a grpc-web client
  * @interface
  */
-const AbstractClientBase = class {
+export const AbstractClientBase = class {
   constructor() {}
 
   /**
@@ -145,7 +140,3 @@ AbstractClientBase.MethodInfo = class {
     this.responseDeserializeFn = responseDeserializeFn;
   }
 };
-
-
-
-exports = AbstractClientBase;

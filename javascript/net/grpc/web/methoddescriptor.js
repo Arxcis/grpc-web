@@ -4,18 +4,15 @@
  * A templated class that is used to address gRPC Web requests.
  */
 
-goog.module('grpc.web.MethodDescriptor');
-goog.module.declareLegacyNamespace();
-
-const CallOptions = goog.require('grpc.web.CallOptions');
-const Metadata = goog.requireType('grpc.web.Metadata');
-const MethodDescriptorInterface = goog.requireType('grpc.web.MethodDescriptorInterface');
-const MethodType = goog.requireType('grpc.web.MethodType');
-const Request = goog.requireType('grpc.web.Request');
-const RequestInternal = goog.require('grpc.web.RequestInternal');
-const UnaryResponse = goog.requireType('grpc.web.UnaryResponse');
-const UnaryResponseInternal = goog.require('grpc.web.UnaryResponseInternal');
-const {Status} = goog.requireType('grpc.web.Status');
+import { CallOptions } from "./calloptions.js";
+import { Metadata } from "./metadata.js";
+import { MethodDescriptorInterface } from "./methoddescriptorinterface.js";
+import { MethodType } from "./methodtype.js";
+import { Request } from "./request.js";
+import { RequestInternal } from "./requestinternal.js";
+import { UnaryResponse } from "./unaryresponse.js";
+import { UnaryResponseInternal } from "./unaryresponseinternal.js";
+import { Status } from "./status.js";
 
 /**
  * @final
@@ -23,7 +20,7 @@ const {Status} = goog.requireType('grpc.web.Status');
  * @template REQUEST, RESPONSE
  * @unrestricted
  */
-const MethodDescriptor = class {
+export const MethodDescriptor = class {
   /**
    * @param {string} name
    * @param {?MethodType} methodType
@@ -112,7 +109,3 @@ const MethodDescriptor = class {
     return this.requestSerializeFn;
   }
 };
-
-
-
-exports = MethodDescriptor;

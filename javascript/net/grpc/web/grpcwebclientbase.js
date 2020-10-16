@@ -23,35 +23,32 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.GrpcWebClientBase');
+import { HttpCors } from "goog.net.rpc.HttpCors"; // @TODO resolve
+import { XhrIo } from "goog.net.XhrIo"; // @TODO resolve
+import { googCrypt } from "goog.crypt.base64"; // @TODO resolve
 
-goog.module.declareLegacyNamespace();
-
-
-const AbstractClientBase = goog.require('grpc.web.AbstractClientBase');
-const ClientOptions = goog.requireType('grpc.web.ClientOptions');
-const ClientReadableStream = goog.require('grpc.web.ClientReadableStream');
-const ClientUnaryCallImpl = goog.require('grpc.web.ClientUnaryCallImpl');
-const Error = goog.require('grpc.web.Error');
-const GrpcWebClientReadableStream = goog.require('grpc.web.GrpcWebClientReadableStream');
-const HttpCors = goog.require('goog.net.rpc.HttpCors');
-const MethodDescriptor = goog.requireType('grpc.web.MethodDescriptor');
-const MethodType = goog.require('grpc.web.MethodType');
-const Request = goog.require('grpc.web.Request');
-const StatusCode = goog.require('grpc.web.StatusCode');
-const XhrIo = goog.require('goog.net.XhrIo');
-const googCrypt = goog.require('goog.crypt.base64');
-const {Status} = goog.require('grpc.web.Status');
-const {StreamInterceptor, UnaryInterceptor} = goog.require('grpc.web.Interceptor');
+import { AbstractClientBase } from "./abstractclientbase.js";
+import { ClientOptions } from "./clientoptions.js";
+import { ClientReadableStream } from "./clientreadablestream.js";
+import { ClientUnaryCallImpl } from "./clientunarycallimpl.js";
+import { Error } from "./error.js";
+import { GrpcWebClientReadableStream } from "./grpcwebclientreadablestream.js";
+import { MethodDescriptor } from "./methoddescriptor.js";
+import { MethodType } from "./methodtype.js";
+import { Request } from "./request.js";
+import { StatusCode } from "./statuscode.js";
+import { Status } from "./status";
+import { StreamInterceptor, UnaryInterceptor} from "./interceptor.js";
 
 
 
+export const GrpcWebClientBaseOptions = ClientOptions;
 /**
  * Base class for gRPC web client using the application/grpc-web wire format
  * @implements {AbstractClientBase}
  * @unrestricted
  */
-class GrpcWebClientBase {
+export class GrpcWebClientBase {
   /**
    * @param {!ClientOptions=} options
    */
@@ -369,7 +366,3 @@ class GrpcWebClientBase {
     return curInvoker;
   }
 }
-
-
-
-exports = GrpcWebClientBase;
