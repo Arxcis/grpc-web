@@ -1,4 +1,4 @@
-// rewriteModules() - Rewrite-function for 'goog.(provide|module)()'-statements
+// @rewriter function
 export function rewriteModules(filestr) {
   const exports = [];
 
@@ -23,24 +23,10 @@ export function rewriteModules(filestr) {
   return [rewrittenFilestr, exports];
 }
 
-// Regex parts
-const CONSTVAR = /(const|var)\s+/; //                      const
-const SYMBOLS = /{?\s*([a-zA-Z][a-zA-Z0-9]*(,\s*[a-zA-Z][a-zA-Z0-9]*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
-const EQUAL = /\s+=\s+/; //                                =
-const REQUIRE = /goog.require(Type)?/; //                  goog.require
-const NAME = /[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/; //       ('goog.util');
-
-// Example of full string:
-// (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
-export const REGEX_REQUIRE = new RegExp(
-  `^[ \t]*(${CONSTVAR.source}${SYMBOLS.source}${EQUAL.source})?${REQUIRE.source}${NAME.source}`,
-  "gm"
-);
-
-// rewriteRequires() - Rewrite-function for 'goog.require()'-statements
+// @rewriter function
 export function rewriteRequires(filestr) {
   const rewrittenFilestr = filestr.replace(REGEX_REQUIRE, (...parts) => {
-    const [a, b, c, symbolstr, e, f, moduleName] = parts;
+    const [, , , symbolstr, , , moduleName] = parts;
     const moduleParts = moduleName.split(".");
     const importName = moduleName.split(".").pop();
     const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
@@ -64,14 +50,21 @@ export function rewriteRequires(filestr) {
   return [rewrittenFilestr];
 }
 
+// @rewriter function
 export function rewriteExports(filestr) {
   const rewritten = filestr.replace(
-    /^[ \t]*exports([.]([a-zA-Z][a-zA-Z0-9]*))?\s*=\s*([a-zA-Z][a-zA-Z0-9]*);?$/m,
-    () => ""
+    /[ \t]*exports([.][a-zA-Z0-9]+)?\s*=\s*{?([a-zA-Z0-9\s,]+)}?/,
+    (...parts) => {
+      const [, , exportstr] = parts;
+      const exports = exportstr.replace(/\s/g, "").split(",");
+
+      return `export { ${exports.join(", ")} }`;
+    }
   );
   return [rewritten];
 }
 
+// @rewriter function
 export function rewriteLegacyNamespace(filestr) {
   const rewritten = filestr.replace(
     /^[ \t]*goog[.]module[.]declareLegacyNamespace[(][)];?$/m,
@@ -79,3 +72,17 @@ export function rewriteLegacyNamespace(filestr) {
   );
   return [rewritten];
 }
+
+// REGEX_REQUIRE parts
+const CONSTVAR = /(const|var)\s+/; //                 const|var
+const SYMBOLS = /{?\s*([a-zA-Z][a-zA-Z0-9]*(,\s*[a-zA-Z][a-zA-Z0-9]*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
+const EQUAL = /\s+=\s+/; //                           =
+const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
+const NAME = /[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/; //  ('goog.util');
+
+// Example of full string:
+// (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
+export const REGEX_REQUIRE = new RegExp(
+  `^[ \t]*(${CONSTVAR.source}${SYMBOLS.source}${EQUAL.source})?${REQUIRE.source}${NAME.source}`,
+  "gm"
+);

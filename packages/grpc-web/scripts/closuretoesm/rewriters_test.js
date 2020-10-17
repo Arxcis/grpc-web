@@ -17,16 +17,16 @@ testRewriter({
 });
 
 testRewriter({
-  title: `Given: exports, we should remove it`,
+  title: `Given: exports =, we should rewrite it exports {}`,
   rewriter: rewriteExports,
   cases: [
     {
       input: `exports = UnaryResponse;`,
-      output: ``,
+      output: `export { UnaryResponse };`,
     },
     {
       input: `exports.Status = Status;`,
-      output: ``,
+      output: `export { Status };`,
     },
     {
       input: `
@@ -35,10 +35,19 @@ testRewriter({
 
 `,
       output: `
-
+export { UnaryResponse };
 
 
 `,
+    },
+    {
+      input: `
+exports = {
+  UnaryInterceptor,
+  StreamInterceptor
+};`,
+      output: `
+export { UnaryInterceptor, StreamInterceptor };`,
     },
   ],
 });
@@ -141,7 +150,7 @@ testRewriter({
 });
 
 testRewriter({
-  title: `Given "const ex = goog.require()", we should rewrite it to: import {} from ""`,
+  title: `Given "const v = goog.require()", we should rewrite it to: import {v} from ""`,
   rewriter: rewriteRequires,
   cases: [
     {
@@ -153,15 +162,22 @@ testRewriter({
       output: `import { Example as example } from "./goog.mytype.index.js";`,
     },
     {
-      input: `const googCrypt = goog.require('goog.crypt.base64');`,
+      input: `var googCrypt = goog.require('goog.crypt.base64');`,
       output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`,
     },
+  ],
+});
+
+testRewriter({
+  title: `Given "const {v} = goog.require()", we should rewrite it to: import {v} from ""`,
+  rewriter: rewriteRequires,
+  cases: [
     {
       input: `const {Status} = goog.require('grpc.web.Status');`,
       output: `import { Status } from "./grpc.web.index.js";`,
     },
     {
-      input: `const {StreamInterceptor, UnaryInterceptor} = goog.require('grpc.web.Interceptor');`,
+      input: `const {StreamInterceptor, UnaryInterceptor   } = goog.require('grpc.web.Interceptor');`,
       output: `import { StreamInterceptor, UnaryInterceptor } from "./grpc.web.index.js";`,
     },
   ],
