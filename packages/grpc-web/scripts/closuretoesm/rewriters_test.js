@@ -6,6 +6,35 @@ import {
 } from "./rewriters.js";
 
 testRewriter({
+  title: `Given a module "goog.array" is declared, we should rewrite all occurances in file`,
+  rewriter: rewriteModules,
+  cases: [
+    {
+      input: `
+goog.provide('goog.array');
+
+goog.array.peek = function(array) {
+  return array[array.length - 1];
+};
+
+goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
+        (goog.array.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
+`,
+      output: `
+export { googarray };
+
+googarray.peek = function(array) {
+  return array[array.length - 1];
+};
+
+googarray.map = goog.NATIVE_ARRAY_PROTOTYPES &&
+        (googarray.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
+`,
+    },
+  ],
+});
+
+testRewriter({
   title: `Given: goog.module.declareLegacyNamespace(), we should remove it`,
   rewriter: rewriteLegacyNamespace,
   cases: [
@@ -62,7 +91,7 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: `export { Example };`,
+      output: `export { googExample };`,
     },
     {
       input: `
@@ -72,7 +101,7 @@ goog.provide('goog.my.Example');
 
       output: `
 
-export { Example };
+export { googExample };
 `,
     },
   ],
@@ -90,8 +119,8 @@ goog.provide('goog.Example.Two');
 class Example;
 `,
       output: `
-export { Example };
-export { Two };
+export { googExample };
+export { googTwo };
 
 class Example;
 `,
@@ -101,16 +130,16 @@ class Example;
 
       goog.provide('goog.Example');
       goog.provide('goog.Example.Two');
-goog.provide('goog.haa.ha.ha.Example.Four');
+goog.provide('goog.haa.ha.ha.Four');
 goog.provide('goog.Example.Ten');
 `,
 
       output: `
 
-export { Example };
-export { Two };
-export { Four };
-export { Ten };
+export { googExample };
+export { googTwo };
+export { googFour };
+export { googTen };
 `,
     },
   ],
@@ -122,7 +151,7 @@ testRewriter({
   cases: [
     {
       input: `goog.module('goog.Example');`,
-      output: `export { Example };`,
+      output: `export { googExample };`,
     },
     {
       input: `
@@ -132,7 +161,7 @@ testRewriter({
 
       output: `
   
-export { Example };
+export { googExample };
   `,
     },
   ],
@@ -144,11 +173,11 @@ testRewriter({
   cases: [
     {
       input: `goog.require('goog.Example');`,
-      output: `import { Example } from "./goog.index.js";`,
+      output: `import { googExample } from "./goog.index.js";`,
     },
     {
       input: `    goog.requireType('goog.mytype.Example');`,
-      output: `import { Example } from "./goog.mytype.index.js";`,
+      output: `import { googExample } from "./goog.mytype.index.js";`,
     },
   ],
 });
@@ -159,15 +188,15 @@ testRewriter({
   cases: [
     {
       input: `const Example = goog.require('goog.mytype.Example');`,
-      output: `import { Example } from "./goog.mytype.index.js";`,
+      output: `import { googExample } from "./goog.mytype.index.js";`,
     },
     {
       input: `const example = goog.require('goog.mytype.Example');`,
-      output: `import { Example as example } from "./goog.mytype.index.js";`,
+      output: `import { googExample as example } from "./goog.mytype.index.js";`,
     },
     {
       input: `var googCrypt = goog.require('goog.crypt.base64');`,
-      output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`,
+      output: `import { googbase64 as googCrypt } from "./goog.crypt.index.js";`,
     },
   ],
 });
@@ -178,11 +207,11 @@ testRewriter({
   cases: [
     {
       input: `const {Status} = goog.require('grpc.web.Status');`,
-      output: `import { Status } from "./grpc.web.index.js";`,
+      output: `import { grpcStatus } from "./grpc.web.index.js";`,
     },
     {
       input: `const {StreamInterceptor, UnaryInterceptor   } = goog.require('grpc.web.Interceptor');`,
-      output: `import { StreamInterceptor, UnaryInterceptor } from "./grpc.web.index.js";`,
+      output: `import { grpcStreamInterceptor, grpcUnaryInterceptor } from "./grpc.web.index.js";`,
     },
   ],
 });

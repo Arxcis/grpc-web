@@ -2,28 +2,30 @@
 export function rewriteModules(filestr) {
   const exports = [];
 
-  const rewritten = filestr.replace(
+  let rewritten = filestr.replace(
     /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
     (a, b, c, moduleName) => {
-      const moduleParts = moduleName.split(".");
-      const exportName = moduleName?.split(".").pop() ?? "undefined";
-      const packageName = moduleParts
-        .slice(0, moduleParts.length - 1)
-        .join(".");
-
+      const packageName = resolvePackageName(moduleName);
+      const prefixName = resolvePrefixName(packageName);
+      const exportName = `${prefixName}${moduleName.split(".").pop()}`;
       exports.push({
         exportName,
         packageName,
+        moduleName,
       });
 
       return `export { ${exportName} };`;
     }
   );
 
+  rewritten = exports.reduce(
+    (acc, { moduleName, exportName }) =>
+      acc.replace(new RegExp(moduleName, "g"), exportName),
+    rewritten
+  );
+
   return [rewritten, exports];
 }
-
-// @rewriter function
 
 // REGEX_REQUIRE parts
 const CONSTVAR = /(const|var)\s+/; //                 const|var
@@ -39,26 +41,28 @@ export const REGEX_REQUIRE = new RegExp(
   "gm"
 );
 
+// @rewriter function
 export function rewriteRequires(filestr) {
   const rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
     const [, , , symbolstr, , , moduleName] = parts;
-    const moduleParts = moduleName.split(".");
+
+    const packageName = resolvePackageName(moduleName);
+    const prefixName = resolvePrefixName(packageName);
     const importName = moduleName.split(".").pop();
-    const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
+    const symbols = symbolstr?.split(",").map((it) => it.trim()) ?? [];
 
-    const symbols = symbolstr?.split(",")?.map((it) => it.trim());
-
+    console.log({ prefixName, packageName, moduleName });
     if (
-      symbols === undefined ||
+      symbols.length === 0 ||
       (symbols.length === 1 && symbols[0] === importName)
     ) {
-      return `import { ${importName} } from "./${packageName}.index.js";`;
+      return `import { ${prefixName}${importName} } from "./${packageName}.index.js";`;
     } else if (symbols.length > 1) {
-      return `import { ${symbols.join(
-        ", "
-      )} } from "./${packageName}.index.js";`;
+      return `import { ${symbols
+        .map((it) => `${prefixName}${it}`)
+        .join(", ")} } from "./${packageName}.index.js";`;
     } else {
-      return `import { ${importName} as ${symbols} } from "./${packageName}.index.js";`;
+      return `import { ${prefixName}${importName} as ${symbols[0]} } from "./${packageName}.index.js";`;
     }
   });
 
@@ -69,7 +73,7 @@ export function rewriteRequires(filestr) {
 export function rewriteExports(filestr) {
   const allExports = [];
   const rewritten = filestr.replace(
-    /[ \t]*exports([.]([a-zA-Z0-9]+))?(\s*=\s*{?([a-zA-Z0-9\s,]+)}?)?;?/,
+    /[ \t]*exports([.]([a-zA-Z0-9.]+))?(\s*=\s*{?([a-zA-Z0-9\s,]+)}?)?;?/,
     (...parts) => {
       const [, , leftSideDeclaration, , exportstr] = parts;
       if (exportstr === undefined) {
@@ -97,4 +101,17 @@ export function rewriteLegacyNamespace(filestr) {
     () => ""
   );
   return [rewritten];
+}
+
+// @helper function
+function resolvePackageName(moduleName) {
+  const parts = moduleName.split(".");
+  const packageName = parts.slice(0, parts.length - 1).join(".");
+
+  return packageName;
+}
+
+// @helper function
+function resolvePrefixName(packageName) {
+  return (packageName.split(".")[0] ?? packageName).toLowerCase();
 }
