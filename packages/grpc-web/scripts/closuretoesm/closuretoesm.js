@@ -41,19 +41,19 @@ await main();
  */
 async function main() {
   await rimrafmkdir(OUT_DIR);
-  log("✅", "Cleared", OUT_DIR);
+  log("Step ✅", "Cleared", OUT_DIR);
 
   await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
-  log("✅", "Traversed and copied dependencies");
+  log("Step ✅", "Traversed and copied dependencies");
 
   await rewrite(OUT_DIR);
-  log("✅", "Converted all dependencies to esm-style");
+  log("Step ✅", "Converted all dependencies to esm-style");
 
-  await cleanup(OUT_DIR);
-  log("✅", "Cleaned up temp files");
+  // await cleanup(OUT_DIR);
+  log("Step ✅", "Cleaned up temp files");
 
   await makeIndexJs(OUT_DIR);
-  log("✅", "Created index.js");
+  log("Step ✅", "Created index.js");
 }
 
 /**
@@ -105,7 +105,7 @@ async function rewrite(OUT_DIR) {
 
       const outFilename = fileName.replace(".closure.js", ".js");
 
-      // 1. modules
+      // 1. goog.modules
       const [filestr1, modules] = rewriteModules(filestr0);
       await Promise.all(
         modules.map(async ({ exportName, packageName }) => {
@@ -115,10 +115,10 @@ async function rewrite(OUT_DIR) {
         })
       );
 
-      // 2. requires
+      // 2. goog.requires
       const [filestr2] = rewriteRequires(filestr1);
 
-      // 3. exports
+      // 3. goog.exports
       const [filestr4, exports] = rewriteExports(filestr2);
       const parts = fileName.replace(".closure.js", "").split(".");
       const packageName = parts.slice(0, parts.length - 1).join(".");
@@ -131,7 +131,7 @@ async function rewrite(OUT_DIR) {
         })
       );
 
-      // 4. legacy namespaces
+      // 4. goog legacy namespaces
       const [filestr5] = rewriteLegacyNamespace(filestr4);
 
       await writeFile(`${OUT_DIR}/${outFilename}`, filestr5);
@@ -140,7 +140,7 @@ async function rewrite(OUT_DIR) {
 }
 
 /**
- * @procedure traverseAndCopy()
+ * @recursive traverseAndCopy()
  *    - Copies all dependencies of `ENTRYPOINT` recursivly into `OUT_DIR`
  *    - Ensures `OUT_DIR` has a flat file hierarchy - no sub-folders.
  *    - Ensures filenames in `OUT_DIR` are `closure module name` + `.js`

@@ -21,11 +21,17 @@ export function rewriteModules(filestr) {
     }
   );
 
-  rewritten = exports.reduce(
-    (acc, { moduleName, exportName }) =>
-      acc.replace(new RegExp(moduleName, "g"), exportName),
-    rewritten
-  );
+  rewritten = exports.reduce((acc, { moduleName, exportName }) => {
+    acc = acc.replace(new RegExp(moduleName, "g"), exportName);
+
+    // remove goog.-prefix and replace again
+    const parts = moduleName.split(".");
+    parts.shift();
+    moduleName = parts.join(".");
+    acc = acc.replace(new RegExp(moduleName, "g"), exportName);
+
+    return acc;
+  }, rewritten);
 
   return [rewritten, exports];
 }

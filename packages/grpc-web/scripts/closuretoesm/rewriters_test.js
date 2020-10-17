@@ -29,7 +29,7 @@ asserts.AssertionError = function(messagePattern, messageArgs) {
 });
 
 testRewriter({
-  title: `Given a goog.module() is declared, we should rewrite all references in file`,
+  title: `Given a goog.provide() is declared, we should rewrite all references in file`,
   rewriter: rewriteModules,
   cases: [
     {
@@ -53,6 +53,20 @@ array.peek = function(array) {
 
 array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
         (array.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
+`,
+    },
+    {
+      input: `
+goog.provide('goog.asserts');
+goog.provide('goog.asserts.AssertionError');
+goog.asserts.AssertionError = function(messagePattern, messageArgs) {
+`,
+      output: `
+export { asserts };
+let asserts = {};
+export { AssertionError };
+let AssertionError = {};
+AssertionError = function(messagePattern, messageArgs) {
 `,
     },
   ],
