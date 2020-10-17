@@ -6,8 +6,7 @@ export function rewriteModules(filestr) {
 
   const rewrittenFilestr = filestr.replace(
     /^([ \t]*goog.(provide|module)\('([.a-zA-Z]+)'\));?$/gm,
-    (...parts) => {
-      const [a, b, c, moduleName] = parts;
+    (a, b, c, moduleName) => {
       const moduleParts = moduleName.split(".");
       const exportName = moduleName?.split(".").pop() ?? "undefined";
       const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
@@ -29,8 +28,7 @@ export const REGEX_REQUIRE = /^[ \t]*((const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+
 export function rewriteRequires(filestr) {
   const rewrittenFilestr = filestr.replace(
     REGEX_REQUIRE,
-    (...parts) => {
-      const [a, b, c, varName, d, moduleName] = parts;
+    (a, b, c, varName, d, moduleName) => {
       const moduleParts = moduleName.split(".");
       const importName = moduleName.split(".").pop();
       const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
