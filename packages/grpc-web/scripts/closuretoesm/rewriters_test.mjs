@@ -155,6 +155,10 @@ testRewriter({
     {
       input: `const googCrypt = goog.require('goog.crypt.base64');`,
       output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`
+    },
+    {
+      input: `const {StreamInterceptor, UnaryInterceptor} = goog.require('grpc.web.Interceptor');`,
+      output: `import {StreamInterceptor, UnaryInterceptor} from "./grpc.web.index.js`
     }
   ],
 });
