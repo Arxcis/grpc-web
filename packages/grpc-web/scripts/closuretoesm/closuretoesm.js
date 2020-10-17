@@ -35,7 +35,7 @@ import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.js";
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR);
-//await cleanup(OUT_DIR);
+await cleanup(OUT_DIR);
 
 // @procedure
 async function cleanup(OUT_DIR) {

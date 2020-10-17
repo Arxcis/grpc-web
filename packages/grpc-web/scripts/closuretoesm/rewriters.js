@@ -24,6 +24,21 @@ export function rewriteModules(filestr) {
 }
 
 // @rewriter function
+
+// REGEX_REQUIRE parts
+const CONSTVAR = /(const|var)\s+/; //                 const|var
+const SYMBOLS = /{?\s*([a-zA-Z][a-zA-Z0-9]*(,\s*[a-zA-Z][a-zA-Z0-9]*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
+const EQUAL = /\s+=\s+/; //                           =
+const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
+const NAME = /[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/; //  ('goog.util');
+
+// Example of full string:
+// (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
+export const REGEX_REQUIRE = new RegExp(
+  `^[ \t]*(${CONSTVAR.source}${SYMBOLS.source}${EQUAL.source})?${REQUIRE.source}${NAME.source}`,
+  "gm"
+);
+
 export function rewriteRequires(filestr) {
   const rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
     const [, , , symbolstr, , , moduleName] = parts;
@@ -83,17 +98,3 @@ export function rewriteLegacyNamespace(filestr) {
   );
   return [rewritten];
 }
-
-// REGEX_REQUIRE parts
-const CONSTVAR = /(const|var)\s+/; //                 const|var
-const SYMBOLS = /{?\s*([a-zA-Z][a-zA-Z0-9]*(,\s*[a-zA-Z][a-zA-Z0-9]*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
-const EQUAL = /\s+=\s+/; //                           =
-const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
-const NAME = /[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/; //  ('goog.util');
-
-// Example of full string:
-// (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
-export const REGEX_REQUIRE = new RegExp(
-  `^[ \t]*(${CONSTVAR.source}${SYMBOLS.source}${EQUAL.source})?${REQUIRE.source}${NAME.source}`,
-  "gm"
-);
