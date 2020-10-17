@@ -21,6 +21,8 @@ const INCLUDE_DIRS = [
 const ENTRYPOINT = "./exports.js";
 const OUT_DIR = "./esm";
 
+const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
+
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR);
@@ -31,11 +33,25 @@ async function rewrite(OUT_DIR) {
 
   await Promise.all(
     files.map(async (it) => {
+      // rewrite require
+      const file = await readFile(join(OUT_DIR, it));
+      const filestr = file.toString();
+
+      const rewrittenFilestr = filestr.replace(REGEX_REQUIRE, (it) => {
+        const matches = it.match(/\('([.a-zA-Z]+)'\)$/);
+        const requireName = matches.pop();
+        if (it.startsWith("goog.require")) {
+          log("legacy import");
+          const symbolName = it.split(".").pop().split("')").shift();
+          return `import * as ${symbolName} from "./${requireName}.js"`;
+        } else {
+          log("module import");
+        }
+      });
+
+      await writeFile(join(OUT_DIR, it), rewrittenFilestr);
       // rewrite module
       // rewrite provide
-      // rewrite require
-
-      log("Rewritten", it);
     })
   );
 }
@@ -66,9 +82,7 @@ async function traverseAndCopy(
 
   await writeFile(join(OUT_DIR, `${moduleName}.js`), filestr);
 
-  const requireMatches = filestr.matchAll(
-    /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm
-  );
+  const requireMatches = filestr.matchAll(REGEX_REQUIRE);
 
   const requireNames = [...requireMatches].map((it) => it.pop());
 
