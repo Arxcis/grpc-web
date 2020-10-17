@@ -32,12 +32,44 @@ import {
 import { execShellCommand } from "./execshellcommand.js";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.js";
 
-await initOutdir(OUT_DIR);
-await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
-await rewrite(OUT_DIR);
-//await cleanup(OUT_DIR);
+await main();
 
-// @procedure
+/**
+ * @procedure main()
+ *    - Runs first.
+ *    - Dictates which order everything else runs in.
+ */
+async function main() {
+  await rimrafmkdir(OUT_DIR);
+  await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+  await rewrite(OUT_DIR);
+  await cleanup(OUT_DIR);
+  await makeIndexJs(OUT_DIR);
+}
+
+/**
+ * @procedure makeIndexJs()
+ *    - Creates the `index.js` file for the entire `OUT_DIR`.
+ *    - The functions exported from `index.js` file, is supposed to be the API
+ *      to the rest of the world.
+ */
+async function makeIndexJs(OUT_DIR) {
+  const indexJs = `/**
+ * @fileoverview Export symbols needed by generated code in ES modules style
+ */
+export { AbstractClientBase } from "./grpc.web.index.js";
+export { GrpcWebClientBase } from "./grpc.web.index.js";
+export { StatusCode } from "./grpc.web.index.js";
+export { MethodDescriptor } from "./grpc.web.index.js";
+export { MethodType } from "./grpc.web.index.js";
+`;
+  await writeFile(`${OUT_DIR}/index.js`, indexJs);
+}
+
+/**
+ * @procedure cleanup()
+ *    Deletes all `.closure.js` temp-files from `OUT_DIR`
+ */
 async function cleanup(OUT_DIR) {
   const filenames = await readdir(OUT_DIR);
   const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
@@ -47,9 +79,11 @@ async function cleanup(OUT_DIR) {
   );
 }
 
-// @procedure
-// - Read all .closure.js-files in OUT_DIR, and apply rewrite-rules to them.
-// - Write .js-files back to OUT_DIR
+/**
+ * @procedure rewrite()
+ *     Reads all `.closure.js`-files in `OUT_DIR`, and apply rewrite-rules to them.
+ *     Writes `.js`-files back to `OUT_DIR`.
+ */
 async function rewrite(OUT_DIR) {
   const filenames = await readdir(OUT_DIR);
   const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
@@ -96,10 +130,13 @@ async function rewrite(OUT_DIR) {
   );
 }
 
-// @procedure
-// - Copying all dependencies of ENTRYPOINT recursivly into OUT_DIR
-// - Copying into OUT_DIR results in a flat file hierarchy. No sub-folders
-// - Filenames in OUT_DIR get the module name.
+/**
+ * @procedure traverseAndCopy()
+ *    - Copies all dependencies of `ENTRYPOINT` recursivly into `OUT_DIR`
+ *    - Ensures `OUT_DIR` has a flat file hierarchy - no sub-folders.
+ *    - Ensures filenames in `OUT_DIR` are `closure module name` + `.js`
+ *    - Example: `goog.debug.error.js`
+ */
 async function traverseAndCopy(
   filepath,
   seen,
@@ -165,15 +202,18 @@ async function traverseAndCopy(
   );
 }
 
-// @procedure
-async function initOutdir(OUT_DIR) {
+/**
+ * @procedure rimrafmkdir
+ *    - Removes existing `OUT_DIR`, before creating a new one.
+ */
+async function rimrafmkdir(OUT_DIR) {
   await rmdir(OUT_DIR, { recursive: true })
     .then(() => log(`rmdir ${OUT_DIR}`))
     .catch(() => {});
   await mkdir(OUT_DIR).then(() => log(`mkdir ${OUT_DIR}`));
 }
 
-// @function with side effect
+/** @function log() - Logs with cool prefix.*/
 function log(...msgs) {
   console.log("[closure-to-esm.mjs]", ...msgs);
 }
