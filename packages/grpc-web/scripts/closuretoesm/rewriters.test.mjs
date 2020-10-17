@@ -25,6 +25,10 @@ testRewriter({
       output: `` 
     },
     {
+      input: `exports.Status = Status;`,
+      output: `` 
+    },
+    {
       input: `
             exports = UnaryResponse;
 

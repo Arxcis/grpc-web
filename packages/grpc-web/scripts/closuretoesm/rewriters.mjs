@@ -47,7 +47,7 @@ export function rewriteRequires(filestr) {
 }
 
 export function rewriteExports(filestr) {
-  const rewritten = filestr.replace(/^[ \t]*exports\s+=\s+([a-zA-Z]+);?$/m, () => "")
+  const rewritten = filestr.replace(/^[ \t]*exports([.][a-zA-Z]+)?\s*=\s*([a-zA-Z]+);?$/m, () => "")
   return [rewritten];
 }
 
