@@ -12,17 +12,17 @@ testRewriter({
     {
       input: `
 goog.require('goog.debug.Error');
-goog.require('goog.dom.NodeType');
+goog.require('goog.asserts');
       
 goog.asserts.AssertionError = function(messagePattern, messageArgs) {
   goog.debug.Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
 `,
       output: `
 import { Error } from "./goog.debug.index.js";
-import { NodeType } from "./goog.dom.index.js";
+import { asserts } from "./goog.index.js";
       
-goog.asserts.AssertionError = function(messagePattern, messageArgs) {
-  Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
+asserts.AssertionError = function(messagePattern, messageArgs) {
+  Error.call(this, asserts.subs_(messagePattern, messageArgs));
 `,
     },
   ],

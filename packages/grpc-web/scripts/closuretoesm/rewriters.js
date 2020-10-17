@@ -73,7 +73,7 @@ export function rewriteRequires(filestr) {
 
   rewritten = imports.reduce(
     (acc, { requireName, importName }) =>
-      acc.replace(new RegExp(requireName), importName),
+      acc.replace(new RegExp(requireName, "g"), importName),
     rewritten
   );
 
