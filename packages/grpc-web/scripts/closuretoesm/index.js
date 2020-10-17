@@ -62,20 +62,33 @@ async function rewrite(OUT_DIR) {
 
       const outFilename = fileName.replace(".closure.js", ".js");
 
-      // 1. Rewrite goog.modules
-      const [filestr1, exports] = rewriteModules(filestr0);
-      // Re-export exports in package-level index.js file
+      // 1. modules
+      const [filestr1, modules] = rewriteModules(filestr0);
       await Promise.all(
-        exports.map(async ({ exportName, packageName }) => {
+        modules.map(async ({ exportName, packageName }) => {
           await execShellCommand(
             `echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`
           );
         })
       );
 
-      // 2. Rewrite goog.requires
+      // 2. requires
       const [filestr2] = rewriteRequires(filestr1);
-      const [filestr4] = rewriteExports(filestr2);
+
+      // 3. exports
+      const [filestr4, exports] = rewriteExports(filestr2);
+      const parts = fileName.replace(".closure.js", "").split(".");
+      const packageName = parts.slice(0, parts.length - 1).join(".");
+
+      await Promise.all(
+        exports.map(async ({ exportName }) => {
+          await execShellCommand(
+            `echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`
+          );
+        })
+      );
+
+      // 4. legacy namespaces
       const [filestr5] = rewriteLegacyNamespace(filestr4);
 
       await writeFile(`${OUT_DIR}/${outFilename}`, filestr5);

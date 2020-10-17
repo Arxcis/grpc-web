@@ -2,7 +2,7 @@
 export function rewriteModules(filestr) {
   const exports = [];
 
-  const rewrittenFilestr = filestr.replace(
+  const rewritten = filestr.replace(
     /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
     (a, b, c, moduleName) => {
       const moduleParts = moduleName.split(".");
@@ -20,12 +20,12 @@ export function rewriteModules(filestr) {
     }
   );
 
-  return [rewrittenFilestr, exports];
+  return [rewritten, exports];
 }
 
 // @rewriter function
 export function rewriteRequires(filestr) {
-  const rewrittenFilestr = filestr.replace(REGEX_REQUIRE, (...parts) => {
+  const rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
     const [, , , symbolstr, , , moduleName] = parts;
     const moduleParts = moduleName.split(".");
     const importName = moduleName.split(".").pop();
@@ -47,21 +47,29 @@ export function rewriteRequires(filestr) {
     }
   });
 
-  return [rewrittenFilestr];
+  return [rewritten];
 }
 
 // @rewriter function
 export function rewriteExports(filestr) {
+  const allExports = [];
   const rewritten = filestr.replace(
-    /[ \t]*exports([.][a-zA-Z0-9]+)?\s*=\s*{?([a-zA-Z0-9\s,]+)}?/,
+    /[ \t]*exports([.][a-zA-Z0-9]+)?\s*=\s*{?([a-zA-Z0-9\s,]+)}?;?/,
     (...parts) => {
       const [, , exportstr] = parts;
       const exports = exportstr.replace(/\s/g, "").split(",");
 
-      return `export { ${exports.join(", ")} }`;
+      // Check if export already exists
+      const outstr = `export { ${exports.join(", ")} }`;
+      if (filestr.includes(outstr)) {
+        return "";
+      }
+
+      allExports.push(...exports.map((it) => ({ exportName: it })));
+      return outstr;
     }
   );
-  return [rewritten];
+  return [rewritten, allExports];
 }
 
 // @rewriter function
