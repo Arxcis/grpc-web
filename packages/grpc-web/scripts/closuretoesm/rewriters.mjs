@@ -26,32 +26,15 @@ export function rewriteModules(filestr) {
 
 // rewriteRequires() - Rewrite-function for 'goog.require()'-statements
 export function rewriteRequires(filestr) {
-  const rewrittenFilestr =  filestr.replace(
-    /^[ \t]*goog.require(Type)?\('([.a-zA-Z]+)'\);?/gm,
+  const rewrittenFilestr = filestr.replace(
+    /^[ \t]*((const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+)?goog.require(Type)?[(]'([.a-zA-Z]+)'[)];?/gm,
     (...parts) => {
-      const [a, b, moduleName] = parts;
+      const [a, b, c, varName, d, moduleName] = parts;
       const moduleParts = moduleName.split(".");
       const importName = moduleName.split(".").pop();
       const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
 
-      return `import { ${importName} } from "./${packageName}.index.js";`;
-    }
-  );
-
-  return [ rewrittenFilestr ];
-}
-
-// rewriteRequiresWithVar() - Rewrite-function for 'goog.require()'-statements
-export function rewriteRequiresWithVar(filestr) {
-  const rewrittenFilestr =  filestr.replace(
-    /^[ \t]*(const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+goog.require(Type)?[(]'([.a-zA-Z]+)'[)];?/gm,
-    (...parts) => {
-      const [a, b, varName, d, moduleName] = parts;
-      const moduleParts = moduleName.split(".");
-      const importName = moduleName.split(".").pop();
-      const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
-
-      if (varName === importName) {
+      if (!varName || varName === importName) {
         return `import { ${importName} } from "./${packageName}.index.js";`;
       } else {
         return `import { ${importName} as ${varName} } from "./${packageName}.index.js";`;
@@ -60,4 +43,14 @@ export function rewriteRequiresWithVar(filestr) {
   );
 
   return [ rewrittenFilestr ];
+}
+
+export function rewriteExports(filestr) {
+  const rewritten = filestr.replace(/^[ \t]*exports\s+=\s+([a-zA-Z]+);?$/m, () => "")
+  return [rewritten];
+}
+
+export function rewriteLegacyNamespace(filestr) {
+  const rewritten = filestr.replace(/^[ \t]*goog[.]module[.]declareLegacyNamespace[(][)];?$/m, () => "")
+  return [rewritten];
 }

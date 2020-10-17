@@ -15,7 +15,12 @@
 import { writeFile, mkdir, readFile, rmdir, readdir, unlink } from "fs/promises";
 import { join } from "path";
 
-import { rewriteModules, rewriteRequires } from "./rewriters.mjs";
+import { 
+  rewriteModules, 
+  rewriteRequires, 
+  rewriteExports,
+  rewriteLegacyNamespace
+} from "./rewriters.mjs";
 import { execShellCommand } from "./execshellcommand.mjs";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
 
@@ -24,7 +29,7 @@ const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\(
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR);
-await cleanup(OUT_DIR);
+//await cleanup(OUT_DIR);
 
 // @procedure
 async function cleanup(OUT_DIR) {
@@ -45,21 +50,23 @@ async function rewrite(OUT_DIR) {
     closureFiles.map(async (fileName) => {
       // rewrite require
       const file = await readFile(join(OUT_DIR, fileName));
-      let filestr = file.toString();
+      const filestr0 = file.toString();
 
       const outFilename = fileName.replace(".closure.js", ".js");
 
       // 1. Rewrite goog.modules
-      const [rewrittenFilestr, exports] = rewriteModules(filestr);
+      const [filestr1, exports] = rewriteModules(filestr0);
       // Re-export exports in package-level index.js file
       await Promise.all(exports.map(async ({ exportName, packageName }) => {
         await execShellCommand(`echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`)
       }));
 
       // 2. Rewrite goog.requires
-      const [finalFilestr] = rewriteRequires(rewrittenFilestr)
+      const [filestr2] = rewriteRequires(filestr1)
+      const [filestr4] = rewriteExports(filestr2)
+      const [filestr5] = rewriteLegacyNamespace(filestr4)
 
-      await writeFile(`${OUT_DIR}/${outFilename}`, finalFilestr);
+      await writeFile(`${OUT_DIR}/${outFilename}`, filestr5);
     })
   );
 }
@@ -91,8 +98,6 @@ async function traverseAndCopy(
   const packageName = parts.slice(0, parts.length-1).join(".")
   const outFullFilename = `${packageName}.${outFilename}`;
 
-  log("-".repeat(depth), "Found module", moduleName);
-
   await writeFile(`${OUT_DIR}/${outFullFilename}`, filestr);
 
   const requireMatches = filestr.matchAll(REGEX_REQUIRE);
@@ -115,6 +120,8 @@ async function traverseAndCopy(
         log("Did not find module", it);
         return;
       }
+
+      log("-".repeat(depth), it);
 
       requireFile = requireFile.trimEnd();
       if (seen.has(requireFile)) {

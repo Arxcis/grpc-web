@@ -1,11 +1,46 @@
 import {
   rewriteRequires,
-  rewriteRequiresWithVar,
   rewriteModules,
+  rewriteExports,
+  rewriteLegacyNamespace,
 } from "./rewriters.mjs";
 
 testRewriter({
-  title: `Given a single "goog.provide()" it should rewrite to a single "export{}"`,
+  title: `Given: goog.module.declareLegacyNamespace(), we should remove it`,
+  rewriter: rewriteLegacyNamespace,
+  cases: [
+    {
+      input: `goog.module.declareLegacyNamespace();`,
+      output: `` 
+    },
+  ]
+});
+
+testRewriter({
+  title: `Given: exports, we should remove it`,
+  rewriter: rewriteExports,
+  cases: [
+    {
+      input: `exports = UnaryResponse;`,
+      output: `` 
+    },
+    {
+      input: `
+            exports = UnaryResponse;
+
+
+`,
+      output: `
+
+
+
+`,
+    }
+  ]
+})
+
+testRewriter({
+  title: `Given a single "goog.provide()", we should rewrite it to a single: "export{}"`,
   rewriter: rewriteModules,
   cases: [
     {
@@ -27,7 +62,7 @@ export { Example };
 });
 
 testRewriter({
-  title: `Given multiple "goog.provide()" it should rewrite to multiple "export {}"`,
+  title: `Given multiple "goog.provide()", we should rewrite it to multiple: "export {}"`,
   rewriter: rewriteModules,
   cases: [
     {
@@ -65,7 +100,7 @@ export { Ten };
 });
 
 testRewriter({
-  title: `Given "goog.module()" it should rewrite to "export {}"`,
+  title: `Given "goog.module()", we should rewrite it to: "export {}"`,
   rewriter: rewriteModules,
   cases: [
     {
@@ -87,7 +122,7 @@ export { Example };
 });
 
 testRewriter({
-  title: `Given "goog.require()" it should rewrite to import {} from ""`,
+  title: `Given "goog.require()", we should rewrite it to: import {} from ""`,
   rewriter: rewriteRequires,
   cases: [
     {
@@ -102,8 +137,8 @@ testRewriter({
 });
 
 testRewriter({
-  title: `Given "const ex = goog.require()" it should rewrite to import {} from ""`,
-  rewriter: rewriteRequiresWithVar,
+  title: `Given "const ex = goog.require()", we should rewrite it to: import {} from ""`,
+  rewriter: rewriteRequires,
   cases: [
     {
       input: `const Example = goog.require('goog.mytype.Example');`,
@@ -115,7 +150,6 @@ testRewriter({
     },
   ],
 });
-
 
 
 // testRewriter basically defines a micro testing framework specialized only for testing ./rewriters.mjs
