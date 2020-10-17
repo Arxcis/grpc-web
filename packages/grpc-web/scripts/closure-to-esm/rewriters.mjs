@@ -33,11 +33,14 @@ export function rewriteRequires(filestr) {
     /^[ \t]*((const|var)[ \t]+([a-zA-Z]+)[ \t]+=[ \t]+)?goog.require(Type)?\('([.a-zA-Z]+)'\);?/gm,
     (it) => {
       const matches = it.match(REGEX_PATH);
-      const requireName = matches.pop();
+      const moduleName = matches.pop();
+
+      const parts = moduleName.split(".");
+      const importName = moduleName.split(".").pop();
+      const packageName = parts.slice(0, parts.length - 1).join(".");
 
       if (it.trim().startsWith("goog.require")) {
-        const symbolName = requireName?.split(".").pop() ?? "undefined";
-        return `import { ${symbolName} } from "./${requireName}.js";`;
+        return `import { ${importName} } from "./${packageName}.js";`;
       } else {
         return it;
       }

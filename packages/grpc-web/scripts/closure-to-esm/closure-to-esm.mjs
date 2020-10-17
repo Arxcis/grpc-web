@@ -25,11 +25,13 @@ const INCLUDE_DIRS = [
 
 const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
 
-//await initOutdir(OUT_DIR);
-//await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+await initOutdir(OUT_DIR);
+await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR, REWRITERS);
 
 // @procedure
+// - Read all .closure.js-files in OUT_DIR, and apply rewrite-rules to them.
+// - Write .js-files back to OUT_DIR
 async function rewrite(OUT_DIR, REWRITERS) {
   let filenames = await readdir(OUT_DIR);
   filenames = filenames.filter((it) => it.endsWith(".closure.js"));
@@ -75,6 +77,13 @@ async function traverseAndCopy(
   log("-".repeat(depth), "Found module", moduleName);
 
   await writeFile(join(OUT_DIR, `${moduleName}.closure.js`), filestr);
+
+  // Append export on package-level
+  const parts = moduleName.split(".");
+  const exportName = moduleName.split(".").pop();
+  const packageName = parts.slice(0, parts.length - 1).join(".");
+  const append = `echo "export { ${exportName} } from \\"./${moduleName}.js\\"" >> "./${OUT_DIR}/${packageName}.js"`;
+  await execShellCommand(append);
 
   const requireMatches = filestr.matchAll(REGEX_REQUIRE);
   const requireNames = [...requireMatches].map((it) => it.pop());
