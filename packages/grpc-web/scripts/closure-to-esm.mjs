@@ -23,10 +23,59 @@ const INCLUDE_DIRS = [
 const REWRITE_FUNCTIONS = [rewriteRequires, rewriteModules, rewriteProvides];
 
 const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
+const REGEX_MODULE = /^goog.module\('([.a-zA-Z]+)'\)/m;
+const REGEX_PROVIDE = /(\S*goog.provide\('([.a-zA-Z]+)'\);?\s)+/;
+const REGEX_MODULE_NAME = /\('([.a-zA-Z]+)'\);?$/;
 
 //await initOutdir(OUT_DIR);
 //await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR, REWRITE_FUNCTIONS);
+
+// @rewrite function
+function rewriteProvides(filestr) {
+  return filestr.replace(REGEX_PROVIDE, (match) => {
+    const lines = match.split("\n").filter((it) => it !== "");
+
+    const out = `export {
+  ${lines
+    .map((line) => {
+      const matches = line.match(REGEX_MODULE_NAME);
+      const provideName = matches.pop();
+
+      return provideName.split(".").pop();
+    })
+    .join(",\n  ")}
+}`;
+
+    return out;
+  });
+}
+
+// @rewrite function
+function rewriteModules(filestr) {
+  return filestr.replace(REGEX_MODULE, (it) => {
+    const matches = it.match(REGEX_MODULE_NAME);
+    const requireName = matches.pop();
+
+    const symbolName = requireName?.split(".").pop() ?? "undefined";
+    return `export { ${symbolName} }`;
+  });
+}
+
+// @rewrite function
+function rewriteRequires(filestr) {
+  return filestr.replace(REGEX_REQUIRE, (it) => {
+    const matches = it.match(REGEX_MODULE_NAME);
+    const requireName = matches.pop();
+
+    if (it.startsWith("goog.require")) {
+      const symbolName = requireName?.split(".").pop() ?? "undefined";
+      return `import { ${symbolName} } from "./${requireName}.js"`;
+    } else {
+      return it;
+    }
+  });
+}
 
 // @procedure
 async function rewrite(OUT_DIR, REWRITE_FUNCTIONS) {
@@ -47,27 +96,6 @@ async function rewrite(OUT_DIR, REWRITE_FUNCTIONS) {
       await writeFile(join(OUT_DIR, outFilename), filestr);
     })
   );
-}
-
-function rewriteRequires(filestr) {
-  return filestr.replace(REGEX_REQUIRE, (it) => {
-    const matches = it.match(/\('([.a-zA-Z]+)'\)$/);
-    const requireName = matches.pop();
-    if (it.startsWith("goog.require")) {
-      log("legacy import");
-      const symbolName = it.split(".").pop().split("')").shift();
-      return `import * as ${symbolName} from "./${requireName}.js"`;
-    } else {
-      return it;
-    }
-  });
-}
-
-function rewriteModules(filestr) {
-  return filestr;
-}
-function rewriteProvides(filestr) {
-  return filestr;
 }
 
 // @procedure
