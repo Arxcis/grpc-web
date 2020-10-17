@@ -1,4 +1,6 @@
 /**
+ * Closure to esm tool - closuretoesm.mjs
+ * 
  * Build a distribution of grpc-web that is compatible with ES Modules (esm for short).
  *
  * ## Use cases:
@@ -10,53 +12,54 @@
  * import * as grpcWeb from "https://cdn.jsdelivr.net/npm/grpc-web@1.2.1/index.esm.js"
  * ```
  */
-import { writeFile, mkdir, readFile, rmdir, readdir } from "fs/promises";
+import { writeFile, mkdir, readFile, rmdir, readdir, unlink } from "fs/promises";
 import { join } from "path";
-import { exec } from "child_process";
 
-import { REWRITERS } from "./rewriters.mjs";
-
-const ENTRYPOINT = "./exports.js";
-const OUT_DIR = "./esm";
-const INCLUDE_DIRS = [
-  "../../javascript/net/grpc/web",
-  "../../third_party/closure-library/closure/goog/",
-];
+import { rewriteModules, rewriteRequires } from "./rewriters.mjs";
+import { execShellCommand } from "./execshellcommand.mjs";
+import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
 
 const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
 
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
-await rewrite(OUT_DIR, REWRITERS);
+await rewrite(OUT_DIR);
+await cleanup(OUT_DIR);
 
-async function appendRexportOnPackageLevel() {
-  /*     // Append re-export on package-level file.
-    const parts = moduleName.split(".");
-    const exportName = moduleName.split(".").pop();
-    const packageName = parts.slice(0, parts.length - 1).join(".");
-    const append = `echo "export { ${exportName} } from \\"./${moduleName}.js\\"" >> "./${OUT_DIR}/${packageName}.js"`;
-    await execShellCommand(append); */
+// @procedure
+async function cleanup(OUT_DIR) {
+  const filenames = await readdir(OUT_DIR);
+  const closureFiles = filenames.filter(it => it.endsWith(".closure.js"))
+
+  await Promise.all(closureFiles.map(async it => await unlink(`${OUT_DIR}/${it}`)));
 }
 
 // @procedure
 // - Read all .closure.js-files in OUT_DIR, and apply rewrite-rules to them.
 // - Write .js-files back to OUT_DIR
-async function rewrite(OUT_DIR, REWRITERS) {
-  let filenames = await readdir(OUT_DIR);
-  filenames = filenames.filter((it) => it.endsWith(".closure.js"));
+async function rewrite(OUT_DIR) {
+  const filenames = await readdir(OUT_DIR);
+  const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
 
   await Promise.all(
-    filenames.map(async (it) => {
+    closureFiles.map(async (fileName) => {
       // rewrite require
-      const file = await readFile(join(OUT_DIR, it));
+      const file = await readFile(join(OUT_DIR, fileName));
       let filestr = file.toString();
 
-      for (const func of REWRITERS) {
-        filestr = func(filestr);
-      }
+      const outFilename = fileName.replace(".closure.js", ".js");
 
-      const outFilename = `${it.replace(".closure", "")}`;
-      await writeFile(join(OUT_DIR, outFilename), filestr);
+      // 1. Rewrite goog.modules
+      const [rewrittenFilestr, exports] = rewriteModules(filestr);
+      // Re-export exports in package-level index.js file
+      await Promise.all(exports.map(async ({ exportName, packageName }) => {
+        await execShellCommand(`echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`)
+      }));
+
+      // 2. Rewrite goog.requires
+      const [finalFilestr] = rewriteRequires(rewrittenFilestr)
+
+      await writeFile(`${OUT_DIR}/${outFilename}`, finalFilestr);
     })
   );
 }
@@ -83,9 +86,14 @@ async function traverseAndCopy(
     return;
   }
   const moduleName = moduleMatches.pop();
+  const outFilename = filepath.split("/").pop().replace(".js", ".closure.js");
+  const parts = moduleName.split(".");
+  const packageName = parts.slice(0, parts.length-1).join(".")
+  const outFullFilename = `${packageName}.${outFilename}`;
+
   log("-".repeat(depth), "Found module", moduleName);
 
-  await writeFile(join(OUT_DIR, `${moduleName}.closure.js`), filestr);
+  await writeFile(`${OUT_DIR}/${outFullFilename}`, filestr);
 
   const requireMatches = filestr.matchAll(REGEX_REQUIRE);
   const requireNames = [...requireMatches].map((it) => it.pop());
@@ -138,14 +146,3 @@ function log(...msgs) {
   console.log("[closure-to-esm.mjs]", ...msgs);
 }
 
-// @function with side effect
-function execShellCommand(cmd) {
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(stdout ? stdout : stderr);
-    });
-  });
-}

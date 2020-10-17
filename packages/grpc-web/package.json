@@ -20,8 +20,8 @@
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "test": "mocha --timeout 60000 \"./test/**/*_test.js\"",
-    "esm": "node --harmony-top-level-await ./scripts/closure-to-esm/closure-to-esm.mjs",
-    "test-esm": "node --harmony-top-level-await ./scripts/closure-to-esm/rewriters.test.mjs"
+    "esm": "node --harmony-top-level-await ./scripts/closuretoesm/closuretoesm.mjs",
+    "test-esm": "node --harmony-top-level-await ./scripts/closuretoesm/rewriters.test.mjs"
   },
   "license": "Apache-2.0",
   "devDependencies": {
