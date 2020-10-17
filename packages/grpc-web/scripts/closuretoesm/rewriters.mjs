@@ -1,11 +1,9 @@
-const REGEX_PATH = /\('([.a-zA-Z]+)'\);?$/;
-
 // rewriteModules() - Rewrite-function for 'goog.(provide|module)()'-statements
 export function rewriteModules(filestr) {
   const exports = [];
 
   const rewrittenFilestr = filestr.replace(
-    /^([ \t]*goog.(provide|module)\('([.a-zA-Z]+)'\));?$/gm,
+    /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
     (a, b, c, moduleName) => {
       const moduleParts = moduleName.split(".");
       const exportName = moduleName?.split(".").pop() ?? "undefined";
@@ -23,7 +21,7 @@ export function rewriteModules(filestr) {
   return [ rewrittenFilestr, exports ];
 }
 
-export const REGEX_REQUIRE = /^[ \t]*((const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+)?goog.require(Type)?[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/gm;
+export const REGEX_REQUIRE = /^[ \t]*((const|var)\s+{?\s*([a-zA-Z][a-zA-Z0-9]*)\s*}?\s+=\s+)?goog.require(Type)?[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/gm;
 // rewriteRequires() - Rewrite-function for 'goog.require()'-statements
 export function rewriteRequires(filestr) {
   const rewrittenFilestr = filestr.replace(
@@ -45,7 +43,7 @@ export function rewriteRequires(filestr) {
 }
 
 export function rewriteExports(filestr) {
-  const rewritten = filestr.replace(/^[ \t]*exports([.][a-zA-Z]+)?\s*=\s*([a-zA-Z]+);?$/m, () => "")
+  const rewritten = filestr.replace(/^[ \t]*exports([.]([a-zA-Z][a-zA-Z0-9]*))?\s*=\s*([a-zA-Z][a-zA-Z0-9]*);?$/m, () => "")
   return [rewritten];
 }
 
