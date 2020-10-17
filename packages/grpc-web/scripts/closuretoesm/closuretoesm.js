@@ -41,16 +41,25 @@ await main();
  */
 async function main() {
   await rimrafmkdir(OUT_DIR);
+  log("✅", "Cleared", OUT_DIR);
+
   await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+  log("✅", "Traversed and copied dependencies");
+
   await rewrite(OUT_DIR);
+  log("✅", "Converted all dependencies to esm-style");
+
   await cleanup(OUT_DIR);
+  log("✅", "Cleaned up temp files");
+
   await makeIndexJs(OUT_DIR);
+  log("✅", "Created index.js");
 }
 
 /**
  * @procedure makeIndexJs()
  *    - Creates the `index.js` file for the entire `OUT_DIR`.
- *    - The functions exported from `index.js` file, is supposed to be the API
+ *    - The functions exported from `index.js` file are supposed to be the API
  *      to the rest of the world.
  */
 async function makeIndexJs(OUT_DIR) {
@@ -68,7 +77,7 @@ export { MethodType } from "./grpc.web.index.js";
 
 /**
  * @procedure cleanup()
- *    Deletes all `.closure.js` temp-files from `OUT_DIR`
+ *    - Deletes all `.closure.js` temp-files from `OUT_DIR`
  */
 async function cleanup(OUT_DIR) {
   const filenames = await readdir(OUT_DIR);
@@ -81,8 +90,8 @@ async function cleanup(OUT_DIR) {
 
 /**
  * @procedure rewrite()
- *     Reads all `.closure.js`-files in `OUT_DIR`, and apply rewrite-rules to them.
- *     Writes `.js`-files back to `OUT_DIR`.
+ *    - Reads all `.closure.js`-files in `OUT_DIR`, and apply rewrite-rules to them.
+ *    - Writes `.js`-files back to `OUT_DIR`.
  */
 async function rewrite(OUT_DIR) {
   const filenames = await readdir(OUT_DIR);
@@ -183,8 +192,6 @@ async function traverseAndCopy(
         return;
       }
 
-      log("-".repeat(depth), it);
-
       requireFile = requireFile.trimEnd();
       if (seen.has(requireFile)) {
         return;
@@ -207,13 +214,11 @@ async function traverseAndCopy(
  *    - Removes existing `OUT_DIR`, before creating a new one.
  */
 async function rimrafmkdir(OUT_DIR) {
-  await rmdir(OUT_DIR, { recursive: true })
-    .then(() => log(`rmdir ${OUT_DIR}`))
-    .catch(() => {});
-  await mkdir(OUT_DIR).then(() => log(`mkdir ${OUT_DIR}`));
+  await rmdir(OUT_DIR, { recursive: true }).catch(() => {});
+  await mkdir(OUT_DIR);
 }
 
 /** @function log() - Logs with cool prefix.*/
 function log(...msgs) {
-  console.log("[closure-to-esm.mjs]", ...msgs);
+  console.log("[closuretoesm.js]", ...msgs);
 }
