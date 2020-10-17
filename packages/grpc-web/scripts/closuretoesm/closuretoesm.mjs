@@ -17,14 +17,13 @@ import { join } from "path";
 
 import { 
   rewriteModules, 
-  rewriteRequires, 
+  rewriteRequires,
+  REGEX_REQUIRE, 
   rewriteExports,
   rewriteLegacyNamespace
 } from "./rewriters.mjs";
 import { execShellCommand } from "./execshellcommand.mjs";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
-
-const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
 
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);

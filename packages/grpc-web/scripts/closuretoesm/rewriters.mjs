@@ -24,10 +24,11 @@ export function rewriteModules(filestr) {
   return [ rewrittenFilestr, exports ];
 }
 
+export const REGEX_REQUIRE = /^[ \t]*((const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+)?goog.require(Type)?[(]'([.a-zA-Z]+)'[)];?/gm;
 // rewriteRequires() - Rewrite-function for 'goog.require()'-statements
 export function rewriteRequires(filestr) {
   const rewrittenFilestr = filestr.replace(
-    /^[ \t]*((const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+)?goog.require(Type)?[(]'([.a-zA-Z]+)'[)];?/gm,
+    REGEX_REQUIRE,
     (...parts) => {
       const [a, b, c, varName, d, moduleName] = parts;
       const moduleParts = moduleName.split(".");
