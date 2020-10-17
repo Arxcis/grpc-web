@@ -83,36 +83,41 @@ async function traverseAndCopy(
   await writeFile(join(OUT_DIR, `${moduleName}.js`), filestr);
 
   const requireMatches = filestr.matchAll(REGEX_REQUIRE);
-
   const requireNames = [...requireMatches].map((it) => it.pop());
 
-  for (const requireName of requireNames) {
-    if (seen.has(requireName)) {
-      continue;
-    } else {
-      seen.add(requireName);
-    }
+  await Promise.all(
+    requireNames.map(async (it) => {
+      if (seen.has(it)) {
+        return;
+      }
+      seen.add(it);
 
-    let requireFile;
-    try {
-      const grep = `grep -iRl "^goog.module('${requireName}')\\|^goog.provide('${requireName}')" ${INCLUDE_DIRS.join(
-        " "
-      )}`;
+      let requireFile;
+      try {
+        const grep = `grep -iRl "^goog.module('${it}')\\|^goog.provide('${it}')" ${INCLUDE_DIRS.join(
+          " "
+        )}`;
+        requireFile = await execShellCommand(grep);
+      } catch (err) {
+        log("Did not find module", it);
+        return;
+      }
 
-      requireFile = await execShellCommand(grep);
-    } catch (err) {
-      log("Did not find module", requireName);
-      continue;
-    }
-
-    requireFile = requireFile.trimEnd();
-    if (seen.has(requireFile)) {
-      continue;
-    } else {
+      requireFile = requireFile.trimEnd();
+      if (seen.has(requireFile)) {
+        return;
+      }
       seen.add(requireFile);
-    }
-    await traverseAndCopy(requireFile, seen, OUT_DIR, INCLUDE_DIRS, depth + 1);
-  }
+
+      await traverseAndCopy(
+        requireFile,
+        seen,
+        OUT_DIR,
+        INCLUDE_DIRS,
+        depth + 1
+      );
+    })
+  );
 }
 
 // @procedure
