@@ -1,6 +1,6 @@
 /**
  * Closure to esm tool - closuretoesm.mjs
- * 
+ *
  * Build a distribution of grpc-web that is compatible with ES Modules (esm for short).
  *
  * ## Use cases:
@@ -12,18 +12,25 @@
  * import * as grpcWeb from "https://cdn.jsdelivr.net/npm/grpc-web@1.2.1/index.esm.js"
  * ```
  */
-import { writeFile, mkdir, readFile, rmdir, readdir, unlink } from "fs/promises";
+import {
+  writeFile,
+  mkdir,
+  readFile,
+  rmdir,
+  readdir,
+  unlink,
+} from "fs/promises";
 import { join } from "path";
 
-import { 
-  rewriteModules, 
+import {
+  rewriteModules,
   rewriteRequires,
-  REGEX_REQUIRE, 
+  REGEX_REQUIRE,
   rewriteExports,
-  rewriteLegacyNamespace
-} from "./rewriters.mjs";
-import { execShellCommand } from "./execshellcommand.mjs";
-import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
+  rewriteLegacyNamespace,
+} from "./rewriters.js";
+import { execShellCommand } from "./execshellcommand.js";
+import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.js";
 
 await initOutdir(OUT_DIR);
 await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
@@ -33,9 +40,11 @@ await rewrite(OUT_DIR);
 // @procedure
 async function cleanup(OUT_DIR) {
   const filenames = await readdir(OUT_DIR);
-  const closureFiles = filenames.filter(it => it.endsWith(".closure.js"))
+  const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
 
-  await Promise.all(closureFiles.map(async it => await unlink(`${OUT_DIR}/${it}`)));
+  await Promise.all(
+    closureFiles.map(async (it) => await unlink(`${OUT_DIR}/${it}`))
+  );
 }
 
 // @procedure
@@ -56,14 +65,18 @@ async function rewrite(OUT_DIR) {
       // 1. Rewrite goog.modules
       const [filestr1, exports] = rewriteModules(filestr0);
       // Re-export exports in package-level index.js file
-      await Promise.all(exports.map(async ({ exportName, packageName }) => {
-        await execShellCommand(`echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`)
-      }));
+      await Promise.all(
+        exports.map(async ({ exportName, packageName }) => {
+          await execShellCommand(
+            `echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`
+          );
+        })
+      );
 
       // 2. Rewrite goog.requires
-      const [filestr2] = rewriteRequires(filestr1)
-      const [filestr4] = rewriteExports(filestr2)
-      const [filestr5] = rewriteLegacyNamespace(filestr4)
+      const [filestr2] = rewriteRequires(filestr1);
+      const [filestr4] = rewriteExports(filestr2);
+      const [filestr5] = rewriteLegacyNamespace(filestr4);
 
       await writeFile(`${OUT_DIR}/${outFilename}`, filestr5);
     })
@@ -94,7 +107,7 @@ async function traverseAndCopy(
   const moduleName = moduleMatches.pop();
   const outFilename = filepath.split("/").pop().replace(".js", ".closure.js");
   const parts = moduleName.split(".");
-  const packageName = parts.slice(0, parts.length-1).join(".")
+  const packageName = parts.slice(0, parts.length - 1).join(".");
   const outFullFilename = `${packageName}.${outFilename}`;
 
   await writeFile(`${OUT_DIR}/${outFullFilename}`, filestr);
@@ -151,4 +164,3 @@ async function initOutdir(OUT_DIR) {
 function log(...msgs) {
   console.log("[closure-to-esm.mjs]", ...msgs);
 }
-

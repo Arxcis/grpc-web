@@ -3,7 +3,7 @@ import {
   rewriteModules,
   rewriteExports,
   rewriteLegacyNamespace,
-} from "./rewriters.mjs";
+} from "./rewriters.js";
 
 testRewriter({
   title: `Given: goog.module.declareLegacyNamespace(), we should remove it`,
@@ -11,9 +11,9 @@ testRewriter({
   cases: [
     {
       input: `goog.module.declareLegacyNamespace();`,
-      output: `` 
+      output: ``,
     },
-  ]
+  ],
 });
 
 testRewriter({
@@ -22,11 +22,11 @@ testRewriter({
   cases: [
     {
       input: `exports = UnaryResponse;`,
-      output: `` 
+      output: ``,
     },
     {
       input: `exports.Status = Status;`,
-      output: `` 
+      output: ``,
     },
     {
       input: `
@@ -39,9 +39,9 @@ testRewriter({
 
 
 `,
-    }
-  ]
-})
+    },
+  ],
+});
 
 testRewriter({
   title: `Given a single "goog.provide()", we should rewrite it to a single: "export{}"`,
@@ -154,15 +154,18 @@ testRewriter({
     },
     {
       input: `const googCrypt = goog.require('goog.crypt.base64');`,
-      output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`
+      output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`,
+    },
+    {
+      input: `const {Status} = goog.require('grpc.web.Status');`,
+      output: `import { Status } from "./grpc.web.index.js";`,
     },
     {
       input: `const {StreamInterceptor, UnaryInterceptor} = goog.require('grpc.web.Interceptor');`,
-      output: `import {StreamInterceptor, UnaryInterceptor} from "./grpc.web.index.js`
-    }
+      output: `import { StreamInterceptor, UnaryInterceptor } from "./grpc.web.index.js";`,
+    },
   ],
 });
-
 
 // testRewriter basically defines a micro testing framework specialized only for testing ./rewriters.mjs
 function testRewriter({ title, rewriter, cases }) {
