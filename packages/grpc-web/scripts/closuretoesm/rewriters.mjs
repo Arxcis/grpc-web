@@ -6,13 +6,11 @@ export function rewriteModules(filestr) {
 
   const rewrittenFilestr = filestr.replace(
     /^([ \t]*goog.(provide|module)\('([.a-zA-Z]+)'\));?$/gm,
-    (it) => {
-      const matches = it.match(REGEX_PATH);
-      const moduleName = matches.pop();
-
-      const parts = moduleName.split(".");
+    (...parts) => {
+      const [a, b, c, moduleName] = parts;
+      const moduleParts = moduleName.split(".");
       const exportName = moduleName?.split(".").pop() ?? "undefined";
-      const packageName = parts.slice(0, parts.length - 1).join(".");
+      const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
       
       exports.push({
         exportName,
@@ -29,19 +27,34 @@ export function rewriteModules(filestr) {
 // rewriteRequires() - Rewrite-function for 'goog.require()'-statements
 export function rewriteRequires(filestr) {
   const rewrittenFilestr =  filestr.replace(
-    /^[ \t]*((const|var)[ \t]+([a-zA-Z]+)[ \t]+=[ \t]+)?goog.require(Type)?\('([.a-zA-Z]+)'\);?/gm,
-    (it) => {
-      const matches = it.match(REGEX_PATH);
-      const moduleName = matches.pop();
-
-      const parts = moduleName.split(".");
+    /^[ \t]*goog.require(Type)?\('([.a-zA-Z]+)'\);?/gm,
+    (...parts) => {
+      const [a, b, moduleName] = parts;
+      const moduleParts = moduleName.split(".");
       const importName = moduleName.split(".").pop();
-      const packageName = parts.slice(0, parts.length - 1).join(".");
+      const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
 
-      if (it.trim().startsWith("goog.require")) {
+      return `import { ${importName} } from "./${packageName}.index.js";`;
+    }
+  );
+
+  return [ rewrittenFilestr ];
+}
+
+// rewriteRequiresWithVar() - Rewrite-function for 'goog.require()'-statements
+export function rewriteRequiresWithVar(filestr) {
+  const rewrittenFilestr =  filestr.replace(
+    /^[ \t]*(const|var)\s+{?\s*([a-zA-Z]+)\s*}?\s+=\s+goog.require(Type)?[(]'([.a-zA-Z]+)'[)];?/gm,
+    (...parts) => {
+      const [a, b, varName, d, moduleName] = parts;
+      const moduleParts = moduleName.split(".");
+      const importName = moduleName.split(".").pop();
+      const packageName = moduleParts.slice(0, moduleParts.length - 1).join(".");
+
+      if (varName === importName) {
         return `import { ${importName} } from "./${packageName}.index.js";`;
       } else {
-        return it;
+        return `import { ${importName} as ${varName} } from "./${packageName}.index.js";`;
       }
     }
   );
