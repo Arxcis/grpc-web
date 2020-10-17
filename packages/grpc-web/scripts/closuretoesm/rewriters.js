@@ -56,10 +56,11 @@ export function rewriteExports(filestr) {
   const rewritten = filestr.replace(
     /[ \t]*exports([.]([a-zA-Z0-9]+))?(\s*=\s*{?([a-zA-Z0-9\s,]+)}?)?;?/,
     (...parts) => {
-      const [, , leftSideExport, , exportstr] = parts;
-      const exports = exportstr?.replace(/\s/g, "").split(",") ?? [
-        leftSideExport,
-      ];
+      const [, , leftSideDeclaration, , exportstr] = parts;
+      if (exportstr === undefined) {
+        return `let ${leftSideDeclaration};`;
+      }
+      const exports = exportstr.replace(/\s/g, "").split(",");
 
       // Check if export already exists
       const outstr = `export { ${exports.join(", ")} };`;

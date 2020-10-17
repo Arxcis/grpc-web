@@ -51,7 +51,7 @@ export { UnaryInterceptor, StreamInterceptor };`,
     },
     {
       input: "exports.GenericTransportInterface;",
-      output: "export { GenericTransportInterface };",
+      output: "let GenericTransportInterface;",
     },
   ],
 });
