@@ -14,71 +14,23 @@ import { writeFile, mkdir, readFile, rmdir, readdir } from "fs/promises";
 import { join } from "path";
 import { exec } from "child_process";
 
+import { REWRITERS } from "./rewriters.mjs";
+
 const ENTRYPOINT = "./exports.js";
 const OUT_DIR = "./esm";
 const INCLUDE_DIRS = [
   "../../javascript/net/grpc/web",
   "../../third_party/closure-library/closure/goog/",
 ];
-const REWRITE_FUNCTIONS = [rewriteRequires, rewriteModules, rewriteProvides];
 
 const REGEX_REQUIRE = /^((const|var)\s+([a-zA-Z]+)\s+=\s+)?goog.require(Type)?\('([.a-zA-Z]+)'\)/gm;
-const REGEX_MODULE = /^goog.module\('([.a-zA-Z]+)'\)/m;
-const REGEX_PROVIDE = /(\S*goog.provide\('([.a-zA-Z]+)'\);?\s)+/;
-const REGEX_MODULE_NAME = /\('([.a-zA-Z]+)'\);?$/;
 
 //await initOutdir(OUT_DIR);
 //await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
-await rewrite(OUT_DIR, REWRITE_FUNCTIONS);
-
-// @rewrite function
-function rewriteProvides(filestr) {
-  return filestr.replace(REGEX_PROVIDE, (match) => {
-    const lines = match.split("\n").filter((it) => it !== "");
-
-    const out = `export {
-  ${lines
-    .map((line) => {
-      const matches = line.match(REGEX_MODULE_NAME);
-      const provideName = matches.pop();
-
-      return provideName.split(".").pop();
-    })
-    .join(",\n  ")}
-}`;
-
-    return out;
-  });
-}
-
-// @rewrite function
-function rewriteModules(filestr) {
-  return filestr.replace(REGEX_MODULE, (it) => {
-    const matches = it.match(REGEX_MODULE_NAME);
-    const requireName = matches.pop();
-
-    const symbolName = requireName?.split(".").pop() ?? "undefined";
-    return `export { ${symbolName} }`;
-  });
-}
-
-// @rewrite function
-function rewriteRequires(filestr) {
-  return filestr.replace(REGEX_REQUIRE, (it) => {
-    const matches = it.match(REGEX_MODULE_NAME);
-    const requireName = matches.pop();
-
-    if (it.startsWith("goog.require")) {
-      const symbolName = requireName?.split(".").pop() ?? "undefined";
-      return `import { ${symbolName} } from "./${requireName}.js"`;
-    } else {
-      return it;
-    }
-  });
-}
+await rewrite(OUT_DIR, REWRITERS);
 
 // @procedure
-async function rewrite(OUT_DIR, REWRITE_FUNCTIONS) {
+async function rewrite(OUT_DIR, REWRITERS) {
   let filenames = await readdir(OUT_DIR);
   filenames = filenames.filter((it) => it.endsWith(".closure.js"));
 
@@ -88,7 +40,7 @@ async function rewrite(OUT_DIR, REWRITE_FUNCTIONS) {
       const file = await readFile(join(OUT_DIR, it));
       let filestr = file.toString();
 
-      for (const func of REWRITE_FUNCTIONS) {
+      for (const func of REWRITERS) {
         filestr = func(filestr);
       }
 
