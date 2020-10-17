@@ -54,13 +54,15 @@ export function rewriteRequires(filestr) {
 export function rewriteExports(filestr) {
   const allExports = [];
   const rewritten = filestr.replace(
-    /[ \t]*exports([.][a-zA-Z0-9]+)?\s*=\s*{?([a-zA-Z0-9\s,]+)}?;?/,
+    /[ \t]*exports([.]([a-zA-Z0-9]+))?(\s*=\s*{?([a-zA-Z0-9\s,]+)}?)?;?/,
     (...parts) => {
-      const [, , exportstr] = parts;
-      const exports = exportstr.replace(/\s/g, "").split(",");
+      const [, , leftSideExport, , exportstr] = parts;
+      const exports = exportstr?.replace(/\s/g, "").split(",") ?? [
+        leftSideExport,
+      ];
 
       // Check if export already exists
-      const outstr = `export { ${exports.join(", ")} }`;
+      const outstr = `export { ${exports.join(", ")} };`;
       if (filestr.includes(outstr)) {
         return "";
       }
