@@ -6,7 +6,30 @@ import {
 } from "./rewriters.js";
 
 testRewriter({
-  title: `Given a module "goog.array" is declared, we should rewrite all occurances in file`,
+  title: `Given a goog.require()" is declared, we should rewrite all references in file`,
+  rewriter: rewriteRequires,
+  cases: [
+    {
+      input: `
+goog.require('goog.debug.Error');
+goog.require('goog.dom.NodeType');
+      
+goog.asserts.AssertionError = function(messagePattern, messageArgs) {
+  goog.debug.Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
+`,
+      output: `
+import { Error } from "./goog.debug.index.js";
+import { NodeType } from "./goog.dom.index.js";
+      
+goog.asserts.AssertionError = function(messagePattern, messageArgs) {
+  Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
+`,
+    },
+  ],
+});
+
+testRewriter({
+  title: `Given a goog.module() is declared, we should rewrite all references in file`,
   rewriter: rewriteModules,
   cases: [
     {

@@ -46,13 +46,17 @@ export const REGEX_REQUIRE = new RegExp(
 
 // @rewriter function
 export function rewriteRequires(filestr) {
-  const rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
-    const [, , , symbolstr, , , moduleName] = parts;
+  const imports = [];
+  let rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
+    const [, , , symbolstr, , , requireName] = parts;
 
-    const packageName = resolvePackageName(moduleName);
-    const importName = moduleName.split(".").pop();
+    const packageName = resolvePackageName(requireName);
+    const importName = requireName.split(".").pop();
     const symbols = symbolstr?.split(",").map((it) => it.trim()) ?? [];
-
+    imports.push({
+      requireName,
+      importName,
+    });
     if (
       symbols.length === 0 ||
       (symbols.length === 1 && symbols[0] === importName)
@@ -66,6 +70,12 @@ export function rewriteRequires(filestr) {
       return `import { ${importName} as ${symbols[0]} } from "./${packageName}.index.js";`;
     }
   });
+
+  rewritten = imports.reduce(
+    (acc, { requireName, importName }) =>
+      acc.replace(new RegExp(requireName), importName),
+    rewritten
+  );
 
   return [rewritten];
 }
