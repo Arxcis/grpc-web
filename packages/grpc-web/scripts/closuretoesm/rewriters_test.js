@@ -21,14 +21,14 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
         (goog.array.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
 `,
       output: `
-export { googarray };
+export { array };
 
-googarray.peek = function(array) {
+array.peek = function(array) {
   return array[array.length - 1];
 };
 
-googarray.map = goog.NATIVE_ARRAY_PROTOTYPES &&
-        (googarray.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
+array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
+        (array.ASSUME_NATIVE_FUNCTIONS || Array.prototype.map) ?
 `,
     },
   ],
@@ -91,7 +91,7 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: `export { googExample };`,
+      output: `export { Example };`,
     },
     {
       input: `
@@ -101,7 +101,7 @@ goog.provide('goog.my.Example');
 
       output: `
 
-export { googExample };
+export { Example };
 `,
     },
   ],
@@ -119,8 +119,8 @@ goog.provide('goog.Example.Two');
 class Example;
 `,
       output: `
-export { googExample };
-export { googTwo };
+export { Example };
+export { Two };
 
 class Example;
 `,
@@ -136,10 +136,10 @@ goog.provide('goog.Example.Ten');
 
       output: `
 
-export { googExample };
-export { googTwo };
-export { googFour };
-export { googTen };
+export { Example };
+export { Two };
+export { Four };
+export { Ten };
 `,
     },
   ],
@@ -151,7 +151,7 @@ testRewriter({
   cases: [
     {
       input: `goog.module('goog.Example');`,
-      output: `export { googExample };`,
+      output: `export { Example };`,
     },
     {
       input: `
@@ -161,7 +161,7 @@ testRewriter({
 
       output: `
   
-export { googExample };
+export { Example };
   `,
     },
   ],
@@ -173,11 +173,11 @@ testRewriter({
   cases: [
     {
       input: `goog.require('goog.Example');`,
-      output: `import { googExample } from "./goog.index.js";`,
+      output: `import { Example } from "./goog.index.js";`,
     },
     {
       input: `    goog.requireType('goog.mytype.Example');`,
-      output: `import { googExample } from "./goog.mytype.index.js";`,
+      output: `import { Example } from "./goog.mytype.index.js";`,
     },
   ],
 });
@@ -188,15 +188,15 @@ testRewriter({
   cases: [
     {
       input: `const Example = goog.require('goog.mytype.Example');`,
-      output: `import { googExample } from "./goog.mytype.index.js";`,
+      output: `import { Example } from "./goog.mytype.index.js";`,
     },
     {
       input: `const example = goog.require('goog.mytype.Example');`,
-      output: `import { googExample as example } from "./goog.mytype.index.js";`,
+      output: `import { Example as example } from "./goog.mytype.index.js";`,
     },
     {
       input: `var googCrypt = goog.require('goog.crypt.base64');`,
-      output: `import { googbase64 as googCrypt } from "./goog.crypt.index.js";`,
+      output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`,
     },
   ],
 });
@@ -207,11 +207,11 @@ testRewriter({
   cases: [
     {
       input: `const {Status} = goog.require('grpc.web.Status');`,
-      output: `import { grpcStatus } from "./grpc.web.index.js";`,
+      output: `import { Status } from "./grpc.web.index.js";`,
     },
     {
       input: `const {StreamInterceptor, UnaryInterceptor   } = goog.require('grpc.web.Interceptor');`,
-      output: `import { grpcStreamInterceptor, grpcUnaryInterceptor } from "./grpc.web.index.js";`,
+      output: `import { StreamInterceptor, UnaryInterceptor } from "./grpc.web.index.js";`,
     },
   ],
 });

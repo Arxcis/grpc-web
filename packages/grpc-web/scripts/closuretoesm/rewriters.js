@@ -6,8 +6,7 @@ export function rewriteModules(filestr) {
     /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
     (a, b, c, moduleName) => {
       const packageName = resolvePackageName(moduleName);
-      const prefixName = resolvePrefixName(packageName);
-      const exportName = `${prefixName}${moduleName.split(".").pop()}`;
+      const exportName = moduleName.split(".").pop();
       exports.push({
         exportName,
         packageName,
@@ -47,22 +46,20 @@ export function rewriteRequires(filestr) {
     const [, , , symbolstr, , , moduleName] = parts;
 
     const packageName = resolvePackageName(moduleName);
-    const prefixName = resolvePrefixName(packageName);
     const importName = moduleName.split(".").pop();
     const symbols = symbolstr?.split(",").map((it) => it.trim()) ?? [];
 
-    console.log({ prefixName, packageName, moduleName });
     if (
       symbols.length === 0 ||
       (symbols.length === 1 && symbols[0] === importName)
     ) {
-      return `import { ${prefixName}${importName} } from "./${packageName}.index.js";`;
+      return `import { ${importName} } from "./${packageName}.index.js";`;
     } else if (symbols.length > 1) {
-      return `import { ${symbols
-        .map((it) => `${prefixName}${it}`)
-        .join(", ")} } from "./${packageName}.index.js";`;
+      return `import { ${symbols.join(
+        ", "
+      )} } from "./${packageName}.index.js";`;
     } else {
-      return `import { ${prefixName}${importName} as ${symbols[0]} } from "./${packageName}.index.js";`;
+      return `import { ${importName} as ${symbols[0]} } from "./${packageName}.index.js";`;
     }
   });
 
@@ -109,9 +106,4 @@ function resolvePackageName(moduleName) {
   const packageName = parts.slice(0, parts.length - 1).join(".");
 
   return packageName;
-}
-
-// @helper function
-function resolvePrefixName(packageName) {
-  return (packageName.split(".")[0] ?? packageName).toLowerCase();
 }
