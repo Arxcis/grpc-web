@@ -25,8 +25,8 @@ import {
 import { execShellCommand } from "./execshellcommand.mjs";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
 
-//await initOutdir(OUT_DIR);
-//await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+await initOutdir(OUT_DIR);
+await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR);
 //await cleanup(OUT_DIR);
 
@@ -85,10 +85,10 @@ async function traverseAndCopy(
   const filestr = file.toString();
 
   const moduleMatches = filestr.match(
-    /^goog.(module|provide)\('([a-zA-Z.]+)'\)/m
+    /^goog.(module|provide)\('([a-zA-Z][.a-zA-Z0-9]*)'\)/m
   );
   if (!moduleMatches) {
-    log("Failed to find a module declaration in", requireName);
+    log("Failed to find a module declaration in", filepath);
     return;
   }
   const moduleName = moduleMatches.pop();
