@@ -4,7 +4,7 @@ export function rewriteModules(filestr) {
 
   let rewritten = filestr.replace(
     /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
-    (a, b, c, moduleName) => {
+    (it, b, c, moduleName) => {
       const packageName = resolvePackageName(moduleName);
       const exportName = moduleName.split(".").pop();
       exports.push({
@@ -13,7 +13,11 @@ export function rewriteModules(filestr) {
         moduleName,
       });
 
-      return `export { ${exportName} };`;
+      if (it.includes("provide")) {
+        return `export { ${exportName} };\nlet ${exportName} = {};`;
+      } else {
+        return `export { ${exportName} };`;
+      }
     }
   );
 

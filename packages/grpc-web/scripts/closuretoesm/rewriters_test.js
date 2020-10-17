@@ -22,6 +22,7 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
 `,
       output: `
 export { array };
+let array = {};
 
 array.peek = function(array) {
   return array[array.length - 1];
@@ -91,7 +92,7 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: `export { Example };`,
+      output: `export { Example };\nlet Example = {};`,
     },
     {
       input: `
@@ -102,6 +103,7 @@ goog.provide('goog.my.Example');
       output: `
 
 export { Example };
+let Example = {};
 `,
     },
   ],
@@ -116,13 +118,15 @@ testRewriter({
   goog.provide('goog.Example');
 goog.provide('goog.Example.Two');
 
-class Example;
+goog.Example;
 `,
       output: `
 export { Example };
+let Example = {};
 export { Two };
+let Two = {};
 
-class Example;
+Example;
 `,
     },
     {
@@ -137,9 +141,13 @@ goog.provide('goog.Example.Ten');
       output: `
 
 export { Example };
+let Example = {};
 export { Two };
+let Two = {};
 export { Four };
+let Four = {};
 export { Ten };
+let Ten = {};
 `,
     },
   ],
