@@ -152,6 +152,10 @@ testRewriter({
       input: `const example = goog.require('goog.mytype.Example');`,
       output: `import { Example as example } from "./goog.mytype.index.js";`,
     },
+    {
+      input: `const googCrypt = goog.require('goog.crypt.base64');`,
+      output: `import { base64 as googCrypt } from "./goog.crypt.index.js";`
+    }
   ],
 });
 

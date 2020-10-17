@@ -25,8 +25,8 @@ import {
 import { execShellCommand } from "./execshellcommand.mjs";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.mjs";
 
-await initOutdir(OUT_DIR);
-await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+//await initOutdir(OUT_DIR);
+//await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
 await rewrite(OUT_DIR);
 //await cleanup(OUT_DIR);
 
