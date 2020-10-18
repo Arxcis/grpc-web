@@ -19,6 +19,7 @@ import {
   rmdir,
   readdir,
   unlink,
+  copyFile,
 } from "fs/promises";
 import { join } from "path";
 
@@ -30,8 +31,8 @@ import {
   rewriteLegacyNamespace,
   rewriteGoog,
 } from "./rewriters.js";
-import { execShellCommand } from "./execshellcommand.js";
-import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.js";
+import { execShellCommand, appendLineToFile } from "./execshellcommand.js";
+import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT, GOOG_DIR } from "./config.js";
 
 await main();
 
@@ -50,11 +51,33 @@ async function main() {
   await rewrite(OUT_DIR);
   log("Step ✅", "Converted all dependencies to esm-style");
 
+  await provideGoog(OUT_DIR, GOOG_DIR);
+  log("Step ✅", "Copied base.js and goog.js");
+
   // await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp files");
 
   await makeIndexJs(OUT_DIR);
   log("Step ✅", "Created index.js");
+}
+
+/**
+ * @procedure provideGoog
+ *     - provide goog.js utility to the files that need it.
+ */
+async function provideGoog(OUT_DIR, GOOG_DIR) {
+  await Promise.all([
+    copyFile(`${GOOG_DIR}/base.js`, `${OUT_DIR}/base.js`),
+    copyFile(`${GOOG_DIR}/goog.js`, `${OUT_DIR}/goog.js`),
+  ]);
+
+  await Promise.all([
+    appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
+    appendLineToFile(
+      `import { goog } from \\"./base.js\\";`,
+      `${OUT_DIR}/base.js`
+    ),
+  ]);
 }
 
 /**
@@ -110,8 +133,9 @@ async function rewrite(OUT_DIR) {
       const [filestr1, modules] = rewriteModules(filestr0);
       await Promise.all(
         modules.map(async ({ exportName, packageName }) => {
-          await execShellCommand(
-            `echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`
+          await appendLineToFile(
+            `export { ${exportName} } from \\"./${outFilename}\\"`,
+            `${OUT_DIR}/${packageName}.index.js`
           );
         })
       );

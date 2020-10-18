@@ -281,6 +281,12 @@ import { getUid as googGetUid } from "./goog.js";
   (typeof item).charAt(0) + item;
   `,
     },
+    {
+      input: `if (goog.isArrayLike(arg) && !goog.isArray(arg)) {`,
+      output: `import { isArrayLike as googIsArrayLike } from "./goog.js";
+import { isArray as googIsArray } from "./goog.js";
+if (googIsArrayLike(arg) && !googIsArray(arg)) {`,
+    },
   ],
 });
 

@@ -42,7 +42,8 @@ const googSymbols = [
   "scope",
   "defineClass",
   "declareModuleId",
-];
+].sort((a, b) => b.length - a.length); // Sort most specific (longest-symbol) first.
+
 // @rewriter function
 export function rewriteGoog(filestr) {
   const seen = new Set();
