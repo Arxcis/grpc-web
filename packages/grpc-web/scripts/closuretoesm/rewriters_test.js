@@ -13,16 +13,18 @@ testRewriter({
       input: `
 goog.require('goog.debug.Error');
 goog.require('goog.asserts');
-      
+goog.require('goog.asserts.AssertionError');
+
 goog.asserts.AssertionError = function(messagePattern, messageArgs) {
-  goog.debug.Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
+  goog.debug.Error.call(this,goog.asserts.subs_(messagePattern, messageArgs));
 `,
       output: `
 import { Error } from "./goog.debug.index.js";
 import { asserts } from "./goog.index.js";
-      
-asserts.AssertionError = function(messagePattern, messageArgs) {
-  Error.call(this, asserts.subs_(messagePattern, messageArgs));
+import { AssertionError } from "./goog.asserts.index.js";
+
+AssertionError = function(messagePattern, messageArgs) {
+  Error.call(this,asserts.subs_(messagePattern, messageArgs));
 `,
     },
   ],
@@ -269,7 +271,26 @@ function testRewriter({ title, rewriter, cases }) {
       console.log(`[rewriters.test.mjs] Test ✅ ${title}`);
     } else {
       console.log(`[rewriters.test.mjs] Test ❌ ${title} \nFAILURE!`);
-      console.log({ given: input, expect: output, actual });
+      console.log({
+        given: input,
+        expect: output,
+        actual,
+        diff: getDifference(output, actual),
+      });
     }
   }
+}
+
+// @credits https://stackoverflow.com/a/57102605
+function getDifference(a, b) {
+  var i = 0;
+  var j = 0;
+  var result = "";
+
+  while (j < b.length) {
+    if (a[i] != b[j] || i == a.length) result += b[j];
+    else i++;
+    j++;
+  }
+  return result;
 }

@@ -76,14 +76,20 @@ export function rewriteRequires(filestr) {
     }
   });
 
-  // Sort exports to make sure:
+  // Sort imports to make sure:
   //   'goog.asserts.AssertionType is rewritten before
   //   'goog.asserts
-
   imports.sort((a, b) => b.requireName.length - a.requireName.length);
   rewritten = imports.reduce(
     (acc, { requireName, importName }) =>
-      acc.replace(new RegExp(requireName, "g"), importName),
+      acc.replace(
+        // Dont replace ./goog.asserts"
+        new RegExp("([^\\/])(" + requireName + ")", "g"),
+        (...parts) => {
+          const [, prefix] = parts;
+          return `${prefix}${importName}`;
+        }
+      ),
     rewritten
   );
 
