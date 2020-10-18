@@ -146,6 +146,11 @@ async function patch(OUT_DIR) {
       "const ASSUME_NATIVE_PROMISE = false;",
       `${OUT_DIR}/goog.async.run.closure.js`
     ),
+    // Patch 8: Remove Interceptor module, as it has no symbols
+    deleteLine(
+      "goog.module('grpc.web.Interceptor');",
+      `${OUT_DIR}/grpc.web.interceptor.closure.js`
+    ),
   ]);
 
   await Promise.all([

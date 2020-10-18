@@ -161,6 +161,7 @@ export function rewriteModules(filestr, filename) {
       const packageName = resolvePackageName(pathName);
       const lastPart = pathName.split(".").pop();
       paths.push({
+        exportName: lastPart,
         lastPart,
         packageName,
         pathName,
@@ -252,7 +253,7 @@ export function rewriteExports(filestr) {
     .replace(/exports\s*=\s*\{([\s\w,]+)\};/, (...parts) => {
       const [, exportNameStr] = parts;
       const exportNames = exportNameStr.split(",").map((it) => it.trim());
-      allExports.push(...exportNames);
+      allExports.push(...exportNames.map((it) => ({ exportName: it })));
 
       return `export { ${exportNames.join(", ")} };`;
     })
@@ -260,7 +261,7 @@ export function rewriteExports(filestr) {
     // exports.name = (''|function()) --> export const name = (''|fun)
     .replace(/exports\.([\w_]+)\s*=\s*('|function)/g, (...parts) => {
       const [, exportName, tatOrFunc] = parts;
-      allExports.push(exportName);
+      allExports.push({ exportName });
       return `export const ${exportName} = ${tatOrFunc}`;
     })
 
