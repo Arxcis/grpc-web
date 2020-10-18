@@ -53,14 +53,38 @@ async function main() {
   await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
   log("Step ✅", "Traversed and copied dependencies");
 
+  await patch(OUT_DIR);
+  log("Step ✅", "Applied patches");
+
   await rewrite(OUT_DIR);
   log("Step ✅", "Converted all dependencies to esm-style");
 
   await provideGoog(OUT_DIR, GOOG_DIR);
   log("Step ✅", "Copied base.js and goog.js");
 
-  await cleanup(OUT_DIR);
+  //await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp .closure.js-files");
+}
+
+/**
+ * @procedure patch
+ *    - Here are some patches I apply before transforming
+ *    - These transformations are patches, because they cannot be generalized.
+ *    - They are on-off edge-cases.
+ *    - It can be bugs, missing things, or just patches
+ *    - that makes it much easier to work with the code base
+ */
+async function patch(OUT_DIR) {
+  await Promise.all([
+    // Patch 1: Add missing 'goog.events'-require in 'goog.events.eventtype'
+    execShellCommand(
+      `sed -i "s/goog.require('goog.userAgent');/goog.require('goog.userAgent');\\ngoog.require('goog.events');/g" ./${OUT_DIR}/goog.events.eventtype.closure.js`
+    ),
+    // Patch 2: Add missing 'goog.html'-provide in 'goog.html.safeurl'
+    execShellCommand(
+      `sed -i "s/goog.provide('goog.html.SafeUrl');/goog.provide('goog.html.SafeUrl');\\ngoog.provide('goog.html');/g" ./${OUT_DIR}/goog.html.safeurl.closure.js`
+    ),
+  ]);
 }
 
 /**
