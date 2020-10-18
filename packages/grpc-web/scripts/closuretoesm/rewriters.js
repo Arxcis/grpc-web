@@ -190,7 +190,7 @@ export function rewriteModules(filestr) {
 // REGEX_REQUIRE parts
 const CONSTVAR = /(const|var)\s+/; //                 const|var
 const SYMBOLS = /{?\s*([\w]+(,\s*[\w]+\s*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
-const EQUAL = /\s+=\s+/; //                           =
+const EQUAL = /\s*=\s*/; //                           =
 const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
 const NAME = /[(]'([\w.]+)'[)];?/; //  ('goog.util');
 
@@ -291,9 +291,15 @@ export function rewriteExports(filestr) {
     })
 
     // exports.name;
-    .replace(/^exports.(\w+);/g, (...parts) => {
+    .replace(/^exports.(\w+);$/m, (...parts) => {
       const [, exportName] = parts;
       return `export let ${exportName};`;
+    })
+
+    // exports.generateHttpHeadersOverwriteParam(headers)); -> generateHttpHeadersOverwriteParam(headers));
+    .replace(/exports\.(\w+)(\(\w*\))/, (...parts) => {
+      const [match, exportName, funcCall] = parts;
+      return `${exportName}${funcCall}`;
     });
 
   return [rewritten, allExports];

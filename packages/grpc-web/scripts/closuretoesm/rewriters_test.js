@@ -92,15 +92,15 @@ testRewriter({
 });
 
 testRewriter({
-  title: `Given: exports =, we should rewrite it exports {}`,
+  title: `Given: exports = name;, we should rewrite`,
   rewriter: rewriteExports,
   cases: [
     {
-      input: `exports = UnaryResponse;`,
+      input: `exports = UnaryResponse;\n`,
       output: ``,
     },
     {
-      input: `exports.Status = Status;`,
+      input: `exports.Status = Status;\n`,
       output: ``,
     },
     {
@@ -132,6 +132,10 @@ testRewriter({
       input: "exports.generateHttpHeadersOverwriteParam = function(headers) {",
       output:
         "export const generateHttpHeadersOverwriteParam = function(headers) {",
+    },
+    {
+      input: "exports.generateHttpHeadersOverwriteParam(headers));",
+      output: "generateHttpHeadersOverwriteParam(headers));",
     },
   ],
 });
