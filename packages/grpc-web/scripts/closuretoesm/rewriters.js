@@ -286,7 +286,7 @@ export function rewriteExports(filestr) {
     })
 
     // exports(.name)? = name;
-    .replace(/^exports.(\w+)?\s*=\s*(\w+);/g, (...parts) => {
+    .replace(/exports.(\w+)?\s*=\s*(\w+);\n/g, (match) => {
       return ``;
     })
 
