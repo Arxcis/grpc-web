@@ -114,7 +114,7 @@ export { UnaryInterceptor, StreamInterceptor };`,
     },
     {
       input: "exports.GenericTransportInterface;",
-      output: "export let GenericTransportInterface;",
+      output: "let GenericTransportInterface;",
     },
   ],
 });
@@ -251,7 +251,7 @@ testRewriter({
       output: `import { Example } from "./goog.index.js";`,
     },
     {
-      input: `    goog.requireType('goog.mytype.Example');`,
+      input: `goog.requireType('goog.mytype.Example');`,
       output: `import { Example } from "./goog.mytype.index.js";`,
     },
   ],

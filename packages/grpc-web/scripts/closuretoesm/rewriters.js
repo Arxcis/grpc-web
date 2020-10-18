@@ -187,65 +187,68 @@ export function rewriteModules(filestr) {
   return [rewritten, exports];
 }
 
-// REGEX_REQUIRE parts
-const CONSTVAR = /(const|var)\s+/; //                 const|var
-const SYMBOLS = /{?\s*([\w]+(,\s*[\w]+\s*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
-const EQUAL = /\s*=\s*/; //                           =
-const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
-const NAME = /[(]'([\w.]+)'[)];?/; //  ('goog.util');
-
-// Example of full string:
-// (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
-export const REGEX_REQUIRE = new RegExp(
-  `^[ \t]*(${CONSTVAR.source}${SYMBOLS.source}${EQUAL.source})?${REQUIRE.source}${NAME.source}`,
-  "gm"
-);
+export const REGEX_REQUIRE = /^[ \t]*((const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*)?goog.require(Type)?[(]'([\w.]+)'[)];?[ \t]*$/gm;
 
 // @rewriter function
-export function rewriteRequires(filestr) {
-  const imports = [];
-  let rewritten = filestr.replace(REGEX_REQUIRE, (...parts) => {
-    const [, , , symbolstr, , , requireName] = parts;
+export function rewriteRequires(filestr, filename) {
+  const googImports = [];
+  const rewritten = filestr
+    // ^googRequire(Type)?('goog.debug.Error');
+    .replace(/^goog.require(Type)?[(]'([\w.]+)'[)];?/gm, (...parts) => {
+      const [, , requireName] = parts;
+      const packageName = resolvePackageName(requireName);
+      const lastPart = requireName.split(".").pop();
+      googImports.push({
+        requireName,
+        lastPart,
+      });
 
-    const packageName = resolvePackageName(requireName);
-    const importName = requireName.split(".").pop();
-    const symbols = symbolstr?.split(",").map((it) => it.trim()) ?? [];
-    imports.push({
-      requireName,
-      importName,
-    });
-    if (
-      symbols.length === 0 ||
-      (symbols.length === 1 && symbols[0] === importName)
-    ) {
-      return `import { ${importName} } from "./${packageName}.index.js";`;
-    } else if (symbols.length > 1) {
-      return `import { ${symbols.join(
-        ", "
-      )} } from "./${packageName}.index.js";`;
-    } else {
-      return `import { ${importName} as ${symbols[0]} } from "./${packageName}.index.js";`;
-    }
-  });
+      return `import { ${lastPart} } from "./${packageName}.index.js";`;
+    })
+    // (const|var) {?Example}? = googRequire(Type)?('goog.debug.Error');
+    .replace(
+      /^(const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*goog.require(Type)?[(]'([\w.]+)'[)];?$/gm,
+      (...parts) => {
+        const [, , varName, , , requireName] = parts;
+        const packageName = resolvePackageName(requireName);
+        const lastPart = requireName.split(".").pop();
+
+        const importSymbols = varName.split(",").map((it) => it.trim());
+        googImports.push({
+          requireName,
+          lastPart,
+        });
+
+        if (importSymbols.length === 1 && importSymbols[0] !== lastPart) {
+          return `import { ${lastPart} as ${importSymbols[0]} } from "./${packageName}.index.js";`;
+        } else if (importSymbols.length === 1) {
+          return `import { ${importSymbols[0]} } from "./${packageName}.index.js";`;
+        } else {
+          return `import { ${importSymbols.join(
+            ", "
+          )} } from "./${packageName}.index.js";`;
+        }
+      }
+    );
 
   // Sort imports to make sure:
   //   'goog.asserts.AssertionType is rewritten before
   //   'goog.asserts
-  imports.sort((a, b) => b.requireName.length - a.requireName.length);
-  rewritten = imports.reduce(
-    (acc, { requireName, importName }) =>
+  googImports.sort((a, b) => b.requireName.length - a.requireName.length);
+  const reduced = googImports.reduce(
+    (acc, { requireName, lastPart }) =>
       acc.replace(
         // Dont replace ./goog"-paths
         new RegExp("([^\\/])(" + requireName + ")", "g"),
         (...parts) => {
           const [, prefix] = parts;
-          return `${prefix}${importName}`;
+          return `${prefix}${lastPart}`;
         }
       ),
     rewritten
   );
 
-  return [rewritten];
+  return [reduced];
 }
 
 /**
@@ -293,7 +296,7 @@ export function rewriteExports(filestr) {
     // exports.name;
     .replace(/^exports.(\w+);$/gm, (...parts) => {
       const [, exportName] = parts;
-      return `export let ${exportName};`;
+      return `let ${exportName};`;
     })
 
     // exports.generateHttpHeadersOverwriteParam(headers)); -> generateHttpHeadersOverwriteParam(headers));

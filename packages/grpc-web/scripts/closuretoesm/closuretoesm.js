@@ -231,7 +231,7 @@ async function rewrite(OUT_DIR) {
         const file = await readFile(join(OUT_DIR, fileName));
         let res = file.toString();
 
-        res = rewriteModules(res);
+        res = rewriteModules(res, fileName);
         // Re-export in index.js-file
         await Promise.all(
           res[1].map(async ({ exportName, packageName }) => {
@@ -242,8 +242,8 @@ async function rewrite(OUT_DIR) {
           })
         );
 
-        res = rewriteRequires(res[0]);
-        res = rewriteExports(res[0]);
+        res = rewriteRequires(res[0], fileName);
+        res = rewriteExports(res[0], fileName);
 
         // Re-export in index.js-file if not already re-exported
         const parts = fileName.replace(".closure.js", "").split(".");
@@ -256,9 +256,9 @@ async function rewrite(OUT_DIR) {
           })
         );
 
-        res = rewriteLegacyNamespace(res[0]);
-        res = rewriteGoog(res[0]);
-        res = rewriteEsImports(res[0]);
+        res = rewriteLegacyNamespace(res[0], fileName);
+        res = rewriteGoog(res[0], fileName);
+        res = rewriteEsImports(res[0], fileName);
 
         await writeFile(`${OUT_DIR}/${outFilename}`, res[0]);
       })
