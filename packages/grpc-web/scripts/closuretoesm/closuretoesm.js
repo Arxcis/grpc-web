@@ -28,6 +28,7 @@ import {
   REGEX_REQUIRE,
   rewriteExports,
   rewriteLegacyNamespace,
+  rewriteGoog,
 } from "./rewriters.js";
 import { execShellCommand } from "./execshellcommand.js";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT } from "./config.js";
@@ -134,7 +135,10 @@ async function rewrite(OUT_DIR) {
       // 4. goog legacy namespaces
       const [filestr5] = rewriteLegacyNamespace(filestr4);
 
-      await writeFile(`${OUT_DIR}/${outFilename}`, filestr5);
+      // 5. Rewrite goog.js utilities
+      const [filestr6] = rewriteGoog(filestr5);
+
+      await writeFile(`${OUT_DIR}/${outFilename}`, filestr6);
     })
   );
 }

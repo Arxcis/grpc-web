@@ -1,3 +1,68 @@
+const googSymbols = [
+  "global",
+  "require",
+  "define",
+  "DEBUG",
+  "LOCALE",
+  "TRUSTED_SITE",
+  "DISALLOW_TEST_ONLY_CODE",
+  "getGoogModule",
+  "setTestOnly",
+  "forwardDeclare",
+  "getObjectByName",
+  "basePath",
+  "addSingletonGetter",
+  "typeOf",
+  "isArray",
+  "isArrayLike",
+  "isDateLike",
+  "isFunction",
+  "isObject",
+  "getUid",
+  "hasUid",
+  "removeUid",
+  "mixin",
+  "now",
+  "globalEval",
+  "getCssName",
+  "setCssNameMapping",
+  "getMsg",
+  "getMsgWithFallback",
+  "exportSymbol",
+  "exportProperty",
+  "globalize",
+  "nullFunction",
+  "abstractMethod",
+  "removeHashCode",
+  "getHashCode",
+  "cloneObject",
+  "bind",
+  "partial",
+  "inherits",
+  "scope",
+  "defineClass",
+  "declareModuleId",
+];
+// @rewriter function
+export function rewriteGoog(filestr) {
+  const seen = new Set();
+  for (const googSymbol of googSymbols) {
+    filestr = filestr.replace(new RegExp(`goog\\.${googSymbol}`, "g"), () => {
+      seen.add(googSymbol);
+      return `goog${upperCaseFirstLetter(googSymbol)}`;
+    });
+  }
+
+  filestr = `${[...seen]
+    .map(
+      (it) =>
+        `import { ${it} as goog${upperCaseFirstLetter(it)} } from "./goog.js";`
+    )
+    .join("\n")}\n${filestr}`;
+
+  return [filestr];
+}
+
 // @rewriter function
 export function rewriteModules(filestr) {
   const exports = [];
@@ -83,7 +148,7 @@ export function rewriteRequires(filestr) {
   rewritten = imports.reduce(
     (acc, { requireName, importName }) =>
       acc.replace(
-        // Dont replace ./goog.asserts"
+        // Dont replace ./goog"-paths
         new RegExp("([^\\/])(" + requireName + ")", "g"),
         (...parts) => {
           const [, prefix] = parts;
@@ -136,4 +201,9 @@ function resolvePackageName(moduleName) {
   const packageName = parts.slice(0, parts.length - 1).join(".");
 
   return packageName;
+}
+
+// @helper function
+function upperCaseFirstLetter(word) {
+  return word.replace(/^./, (it) => it.toUpperCase());
 }

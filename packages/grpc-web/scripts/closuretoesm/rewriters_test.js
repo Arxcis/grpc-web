@@ -3,6 +3,7 @@ import {
   rewriteModules,
   rewriteExports,
   rewriteLegacyNamespace,
+  rewriteGoog,
 } from "./rewriters.js";
 
 testRewriter({
@@ -259,6 +260,26 @@ testRewriter({
     {
       input: `const {StreamInterceptor, UnaryInterceptor   } = goog.require('grpc.web.Interceptor');`,
       output: `import { StreamInterceptor, UnaryInterceptor } from "./grpc.web.index.js";`,
+    },
+  ],
+});
+
+testRewriter({
+  title:
+    "Given goog.<someFunction>(), it should be imported from goog.js as goog<SomeFunction>",
+  rewriter: rewriteGoog,
+  cases: [
+    {
+      input: `
+  return goog.isObject(item) ? 'o' + goog.getUid(item) :
+  (typeof item).charAt(0) + item;
+  `,
+      output: `import { isObject as googIsObject } from "./goog.js";
+import { getUid as googGetUid } from "./goog.js";
+
+  return googIsObject(item) ? 'o' + googGetUid(item) :
+  (typeof item).charAt(0) + item;
+  `,
     },
   ],
 });
