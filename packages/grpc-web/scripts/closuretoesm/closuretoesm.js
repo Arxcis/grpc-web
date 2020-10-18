@@ -190,9 +190,7 @@ async function traverseAndCopy(
   const file = await readFile(filepath);
   const filestr = file.toString();
 
-  const moduleMatches = filestr.match(
-    /^goog.(module|provide)\('([a-zA-Z][.a-zA-Z0-9]*)'\)/m
-  );
+  const moduleMatches = filestr.match(/^goog.(module|provide)\('([\w.]+)'\)/m);
   if (!moduleMatches) {
     log("Failed to find a module declaration in", filepath);
     return;

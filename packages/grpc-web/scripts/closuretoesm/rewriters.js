@@ -40,11 +40,11 @@ export function rewriteEsExports(filestr) {
 // @rewriter function
 export function rewriteEsImports(filestr) {
   const rewritten = filestr.replace(
-    /(import { (\w+( as \w+)?) } from "\.\/[\w\.]+\.js";\n)+/g,
+    /(import { (\w+( as \w+)?) } from "\.\/[\w.]+\.js";\n)+/g,
     (...parts) => {
       const [firstPart] = parts;
       const matches = firstPart.matchAll(
-        /import { (\w+( as \w+)?) } from ("\.\/[\w\.]+\.js");/g
+        /import { (\w+( as \w+)?) } from ("\.\/[\w.]+\.js");/g
       );
       const names = [...matches].map(([a, importName, c, fromName]) => ({
         importName,
@@ -145,7 +145,7 @@ export function rewriteModules(filestr) {
   const exports = [];
 
   let rewritten = filestr.replace(
-    /^([ \t]*goog.(provide|module)[(]'([\w.]*)'[)]);?$/gm,
+    /^([ \t]*goog.(provide|module)[(]'([\w.]+)'[)]);?$/gm,
     (it, b, c, moduleName) => {
       const packageName = resolvePackageName(moduleName);
       const exportName = moduleName.split(".").pop();
@@ -179,7 +179,7 @@ export function rewriteModules(filestr) {
 
 // REGEX_REQUIRE parts
 const CONSTVAR = /(const|var)\s+/; //                 const|var
-const SYMBOLS = /{?\s*([\w]+(,\s*[\w]+)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
+const SYMBOLS = /{?\s*([\w]+(,\s*[\w]+\s*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
 const EQUAL = /\s+=\s+/; //                           =
 const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
 const NAME = /[(]'([\w.]+)'[)];?/; //  ('goog.util');
