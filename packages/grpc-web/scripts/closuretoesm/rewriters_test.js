@@ -329,7 +329,11 @@ import { TypedString } from "./goog.string.index.js";
 import { internal } from "./goog.string.index.js";
 `,
       output: `
-import { Const, internal, TypedString } from "./goog.string.index.js";
+import {
+  Const,
+  internal,
+  TypedString
+} from "./goog.string.index.js";
 import { array as Array, asserts } from "./goog.index.js";
 import { SafeUrl } from "./goog.html.index.js";
 `,
@@ -350,7 +354,11 @@ export { XmlHttpDefines } from "./goog.net.xmlhttp.js";
 export { XmlHttp } from "./goog.net.xmlhttp.js";
 `,
       output: `
-export { DefaultXmlHttpFactory, XmlHttp, XmlHttpDefines } from "./goog.net.xmlhttp.js";
+export {
+  DefaultXmlHttpFactory,
+  XmlHttp,
+  XmlHttpDefines
+} from "./goog.net.xmlhttp.js";
 export { XhrLike } from "./goog.net.xhrlike.js";
 `,
     },

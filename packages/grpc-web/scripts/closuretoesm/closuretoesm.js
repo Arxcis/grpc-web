@@ -47,6 +47,9 @@ async function main() {
   await rimrafmkdir(OUT_DIR);
   log("Step ✅", "Cleared", OUT_DIR);
 
+  await makeIndexJs(OUT_DIR);
+  log("Step ✅", "Created index.js");
+
   await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
   log("Step ✅", "Traversed and copied dependencies");
 
@@ -58,9 +61,6 @@ async function main() {
 
   await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp .closure.js-files");
-
-  await makeIndexJs(OUT_DIR);
-  log("Step ✅", "Created index.js");
 }
 
 /**
@@ -88,6 +88,21 @@ async function provideGoog(OUT_DIR, GOOG_DIR) {
       `${OUT_DIR}/goog.js`
     ),
   ]);
+
+  /**
+   *  Configure base.js to not automatically load closure deps
+   *
+   * From `base.js`:
+   * >In uncompiled mode base.js will attempt to load Closure's deps file, unless
+   *  the global <code>CLOSURE_NO_DEPS</code> is set to true.  This allows projects
+   *  to include their own deps file(s) from different locations.
+   */
+  let basejs = (await readFile(`${OUT_DIR}/base.js`)).toString();
+  basejs = basejs.replace(
+    "goog.global.CLOSURE_NO_DEPS;",
+    "goog.global.CLOSURE_NO_DEPS = true;"
+  );
+  await writeFile(`${OUT_DIR}/base.js`, basejs);
 }
 
 /**
@@ -172,9 +187,10 @@ async function rewrite(OUT_DIR) {
       })
     );
   }
+  // Load all index.js for rewriting the exports
   {
     const filenames = await readdir(OUT_DIR);
-    const indexFiles = filenames.filter((it) => it.endsWith(".index.js"));
+    const indexFiles = filenames.filter((it) => it.endsWith("index.js"));
     await Promise.all(
       indexFiles.map(async (filename) => {
         const file = (await readFile(`${OUT_DIR}/${filename}`)).toString();
