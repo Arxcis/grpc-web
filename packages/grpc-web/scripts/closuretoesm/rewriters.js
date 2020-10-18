@@ -1,3 +1,19 @@
+const aliases = [
+  [/^goog\.require\('goog.asserts'\);$/gm, "googAsserts"],
+  [/^goog\.require\('goog.dom.asserts'\);$/gm, "domAsserts"],
+];
+// @rewriter function
+export function rewriteAliases(filestr) {
+  for (const [pattern, alias] of aliases) {
+    filestr = filestr.replace(pattern, (it) => {
+      const line = `const ${alias} = ${it}`;
+      return line;
+    });
+  }
+
+  return [filestr];
+}
+
 // @rewriter function
 export function rewriteEsExports(filestr) {
   const rewritten = filestr.replace(
@@ -192,7 +208,6 @@ export function rewriteRequires(filestr, filename) {
       const lastPart = pathName.split(".").pop();
       paths.push({
         pathName,
-        lastPart,
       });
 
       return `import { ${lastPart} } from "./${packageName}.index.js";`;
@@ -206,14 +221,18 @@ export function rewriteRequires(filestr, filename) {
         const lastPart = pathName.split(".").pop();
 
         const importSymbols = varName.split(",").map((it) => it.trim());
-        paths.push({
-          pathName,
-          lastPart,
-        });
 
         if (importSymbols.length === 1 && importSymbols[0] !== lastPart) {
+          paths.push({
+            pathName,
+            exportName: importSymbols[0],
+          });
           return `import { ${lastPart} as ${importSymbols[0]} } from "./${packageName}.index.js";`;
         } else if (importSymbols.length === 1) {
+          paths.push({
+            pathName,
+            exportName: importSymbols[0],
+          });
           return `import { ${importSymbols[0]} } from "./${packageName}.index.js";`;
         } else {
           return `import { ${importSymbols.join(
@@ -307,10 +326,10 @@ function rewritePathsExceptFilepaths(paths, filestr) {
   paths.sort((a, b) => b.pathName.length - a.pathName.length);
 
   return paths.reduce(
-    (acc, { pathName, lastPart }) =>
+    (acc, { pathName, exportName }) =>
       acc.replace(new RegExp("([^/'])(" + pathName + ")", "g"), (...parts) => {
         const [, prefix] = parts;
-        return `${prefix}${lastPart}`;
+        return `${prefix}${exportName}`;
       }),
     filestr
   );

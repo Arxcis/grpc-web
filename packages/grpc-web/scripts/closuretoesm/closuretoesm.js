@@ -32,6 +32,7 @@ import {
   rewriteGoog,
   rewriteEsImports,
   rewriteEsExports,
+  rewriteAliases,
 } from "./rewriters.js";
 import {
   execShellCommand,
@@ -70,103 +71,6 @@ async function main() {
 
   //await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp .closure.js-files");
-}
-
-/**
- * @procedure patch
- *    - Here are some patches I apply before transforming
- *    - These transformations are patches, because they cannot be generalized.
- *    - They are on-off edge-cases.
- *    - It can be bugs, missing things, or just patches
- *    - that makes it much easier to work with the code base
- */
-async function patch(OUT_DIR) {
-  await Promise.all([
-    // Patch 1: Add missing 'goog.events'-require in 'goog.events.eventtype'
-    appendLineToLine(
-      "goog.require('goog.userAgent');",
-      "goog.require('goog.events');",
-      `${OUT_DIR}/goog.events.eventtype.closure.js`
-    ),
-    // Patch 2: Add missing 'goog.html'-provide in 'goog.html.safeurl'
-    appendLineToLine(
-      "goog.provide('goog.html.SafeUrl');",
-      "goog.provide('goog.html');",
-      `${OUT_DIR}/goog.html.safeurl.closure.js`
-    ),
-    // Patch 3a: Declare NATIVE_ARRAY_PROTOTYPE as local const, because does not exist as goog.CONST
-    replaceLine(
-      "goog.NATIVE_ARRAY_PROTOTYPES =",
-      "const NATIVE_ARRAY_PROTOTYPES = TRUSTED_SITE;",
-      `${OUT_DIR}/goog.array.closure.js`
-    ),
-    // Patch 3a:
-    deleteLine(
-      "goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);",
-      `${OUT_DIR}/goog.array.closure.js`
-    ),
-    // Patch 4: Append some missing to base.js
-    appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
-    // Patch 5: Append some missing exports to goog.js
-    appendLineToFile(
-      `import { goog } from \\"./base.js\\";`,
-      `${OUT_DIR}/goog.js`
-    ),
-    // Patch 5:
-    appendLineToFile(
-      `export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;`,
-      `${OUT_DIR}/goog.js`
-    ),
-    // Patch 5:
-    appendLineToFile(
-      `export const getScriptNonce = goog.getScriptNonce;`,
-      `${OUT_DIR}/goog.js`
-    ),
-    // Patch 5:
-    appendLineToFile(
-      `export const FEATURESET_YEAR = goog.FEATURESET_YEAR;`,
-      `${OUT_DIR}/goog.js`
-    ),
-    /**
-     *  Patch 6: Configure base.js to not automatically load closure deps
-     *
-     * From `base.js`:
-     * >In uncompiled mode base.js will attempt to load Closure's deps file, unless
-     *  the global <code>CLOSURE_NO_DEPS</code> is set to true.  This allows projects
-     *  to include their own deps file(s) from different locations.
-     */
-    replaceLine(
-      "goog.global.CLOSURE_NO_DEPS;",
-      "goog.global.CLOSURE_NO_DEPS = true;",
-      `${OUT_DIR}/base.js`
-    ),
-    // Patch 7a: Declare ASSUME_NATIVE_PROMISE as local const
-    replaceLine(
-      "goog.ASSUME_NATIVE_PROMISE = goog.define('goog.ASSUME_NATIVE_PROMISE', false);",
-      "const ASSUME_NATIVE_PROMISE = false;",
-      `${OUT_DIR}/goog.async.run.closure.js`
-    ),
-    // Patch 8: Remove Interceptor module, as it has no symbols
-    deleteLine(
-      "goog.module('grpc.web.Interceptor');",
-      `${OUT_DIR}/grpc.web.interceptor.closure.js`
-    ),
-  ]);
-
-  await Promise.all([
-    // Patch 3b: Rewrite goog.NATIVE_ARRAY_PROTOTYPE -> NATIVE_ARRAY_PROTOTYPE
-    replaceLine(
-      "goog.NATIVE_ARRAY_PROTOTYPES",
-      "NATIVE_ARRAY_PROTOTYPES",
-      `${OUT_DIR}/goog.array.closure.js`
-    ),
-    // Patch 7b: Rewrite goog.ASSUME_NATIVE_PROMISE -> ASSUME_NATIVE_PROMISE
-    replaceLine(
-      "goog.ASSUME_NATIVE_PROMISE",
-      "ASSUME_NATIVE_PROMISE",
-      `${OUT_DIR}/goog.async.run.closure.js`
-    ),
-  ]);
 }
 
 /**
@@ -236,7 +140,8 @@ async function rewrite(OUT_DIR) {
         const file = await readFile(join(OUT_DIR, fileName));
         let res = file.toString();
 
-        res = rewriteModules(res, fileName);
+        res = rewriteAliases(res, fileName);
+        res = rewriteModules(res[0], fileName);
         // Re-export in index.js-file
         await Promise.all(
           res[1].map(async ({ exportName, packageName }) => {
@@ -363,4 +268,101 @@ async function rimrafmkdir(OUT_DIR) {
 /** @function log() - Logs with cool prefix.*/
 function log(...msgs) {
   console.log("[closuretoesm.js]", ...msgs);
+}
+
+/**
+ * @procedure patch
+ *    - Here are some patches I apply before transforming
+ *    - These transformations are patches, because they cannot be generalized.
+ *    - They are on-off edge-cases.
+ *    - It can be bugs, missing things, or just patches
+ *    - that makes it much easier to work with the code base
+ */
+async function patch(OUT_DIR) {
+  await Promise.all([
+    // Patch 1: Add missing 'goog.events'-require in 'goog.events.eventtype'
+    appendLineToLine(
+      "goog.require('goog.userAgent');",
+      "goog.require('goog.events');",
+      `${OUT_DIR}/goog.events.eventtype.closure.js`
+    ),
+    // Patch 2: Add missing 'goog.html'-provide in 'goog.html.safeurl'
+    appendLineToLine(
+      "goog.provide('goog.html.SafeUrl');",
+      "goog.provide('goog.html');",
+      `${OUT_DIR}/goog.html.safeurl.closure.js`
+    ),
+    // Patch 3a: Declare NATIVE_ARRAY_PROTOTYPE as local const, because does not exist as goog.CONST
+    replaceLine(
+      "goog.NATIVE_ARRAY_PROTOTYPES =",
+      "const NATIVE_ARRAY_PROTOTYPES = TRUSTED_SITE;",
+      `${OUT_DIR}/goog.array.closure.js`
+    ),
+    // Patch 3a:
+    deleteLine(
+      "goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);",
+      `${OUT_DIR}/goog.array.closure.js`
+    ),
+    // Patch 4: Append some missing to base.js
+    appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
+    // Patch 5: Append some missing exports to goog.js
+    appendLineToFile(
+      `import { goog } from \\"./base.js\\";`,
+      `${OUT_DIR}/goog.js`
+    ),
+    // Patch 5:
+    appendLineToFile(
+      `export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;`,
+      `${OUT_DIR}/goog.js`
+    ),
+    // Patch 5:
+    appendLineToFile(
+      `export const getScriptNonce = goog.getScriptNonce;`,
+      `${OUT_DIR}/goog.js`
+    ),
+    // Patch 5:
+    appendLineToFile(
+      `export const FEATURESET_YEAR = goog.FEATURESET_YEAR;`,
+      `${OUT_DIR}/goog.js`
+    ),
+    /**
+     *  Patch 6: Configure base.js to not automatically load closure deps
+     *
+     * From `base.js`:
+     * >In uncompiled mode base.js will attempt to load Closure's deps file, unless
+     *  the global <code>CLOSURE_NO_DEPS</code> is set to true.  This allows projects
+     *  to include their own deps file(s) from different locations.
+     */
+    replaceLine(
+      "goog.global.CLOSURE_NO_DEPS;",
+      "goog.global.CLOSURE_NO_DEPS = true;",
+      `${OUT_DIR}/base.js`
+    ),
+    // Patch 7a: Declare ASSUME_NATIVE_PROMISE as local const
+    replaceLine(
+      "goog.ASSUME_NATIVE_PROMISE = goog.define('goog.ASSUME_NATIVE_PROMISE', false);",
+      "const ASSUME_NATIVE_PROMISE = false;",
+      `${OUT_DIR}/goog.async.run.closure.js`
+    ),
+    // Patch 8: Remove Interceptor module, as it has no symbols
+    deleteLine(
+      "goog.module('grpc.web.Interceptor');",
+      `${OUT_DIR}/grpc.web.interceptor.closure.js`
+    ),
+  ]);
+
+  await Promise.all([
+    // Patch 3b: Rewrite goog.NATIVE_ARRAY_PROTOTYPE -> NATIVE_ARRAY_PROTOTYPE
+    replaceLine(
+      "goog.NATIVE_ARRAY_PROTOTYPES",
+      "NATIVE_ARRAY_PROTOTYPES",
+      `${OUT_DIR}/goog.array.closure.js`
+    ),
+    // Patch 7b: Rewrite goog.ASSUME_NATIVE_PROMISE -> ASSUME_NATIVE_PROMISE
+    replaceLine(
+      "goog.ASSUME_NATIVE_PROMISE",
+      "ASSUME_NATIVE_PROMISE",
+      `${OUT_DIR}/goog.async.run.closure.js`
+    ),
+  ]);
 }

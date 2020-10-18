@@ -6,6 +6,7 @@ import {
   rewriteGoog,
   rewriteEsImports,
   rewriteEsExports,
+  rewriteAliases,
 } from "./rewriters.js";
 
 testRewriter({
@@ -392,6 +393,17 @@ let Event = {};
 
 goog.require('goog.events.EventId');
 `,
+    },
+  ],
+});
+
+testRewriter({
+  title: "Given conflicting names, they should be aliased.",
+  rewriter: rewriteAliases,
+  cases: [
+    {
+      input: `export { asserts };\ngoog.require('goog.asserts');`,
+      output: `export { asserts };\nconst googAsserts = goog.require('goog.asserts');`,
     },
   ],
 });
