@@ -4,6 +4,7 @@ import {
   rewriteExports,
   rewriteLegacyNamespace,
   rewriteGoog,
+  rewriteMergeImports,
 } from "./rewriters.js";
 
 testRewriter({
@@ -296,6 +297,29 @@ import { getUid } from "./goog.js";
       output: `import { isArrayLike } from "./goog.js";
 import { isArray } from "./goog.js";
 if (isArrayLike(arg) && !isArray(arg)) {`,
+    },
+  ],
+});
+
+testRewriter({
+  title:
+    "Given multiple imports from the same source, it should be put on a single line sorted by length",
+  rewriter: rewriteMergeImports,
+  cases: [
+    {
+      input: `
+import { array as Array } from "./goog.index.js";
+import { asserts } from "./goog.index.js";
+import { SafeUrl } from "./goog.html.index.js";
+import { Const } from "./goog.string.index.js";
+import { TypedString } from "./goog.string.index.js";
+import { internal } from "./goog.string.index.js";
+`,
+      output: `
+import { Const, internal, TypedString } from "./goog.string.index.js";
+import { array as Array, asserts } from "./goog.index.js";
+import { SafeUrl } from "./goog.html.index.js";
+`,
     },
   ],
 });

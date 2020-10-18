@@ -1,3 +1,41 @@
+// @rewriter function
+export function rewriteMergeImports(filestr) {
+  const rewritten = filestr.replace(
+    /(import { (\w+( as \w+)?) } from "\.\/[\w\.]+\.js";\n)+/g,
+    (...parts) => {
+      const [firstPart] = parts;
+      const matches = firstPart.matchAll(
+        /import { (\w+( as \w+)?) } from ("\.\/[\w\.]+\.js");/g
+      );
+      const names = [...matches].map(([a, importName, c, fromName]) => ({
+        importName,
+        fromName,
+      }));
+
+      const merged = names.reduce((acc, { fromName, importName }) => {
+        return {
+          ...acc,
+          [fromName]: acc[fromName]
+            ? [importName, ...acc[fromName]]
+            : [importName],
+        };
+      }, {});
+
+      const mergedstr = Object.entries(merged)
+        .map(([fromName, importNames]) => {
+          return `import { ${importNames
+            .sort((a, b) => a.localeCompare(b))
+            .join(", ")} } from ${fromName};`;
+        })
+        .sort((a, b) => b.length - a.length)
+        .join("\n");
+
+      return `${mergedstr}\n`;
+    }
+  );
+  return [rewritten];
+}
+
 const googSymbols = [
   "global",
   "require",

@@ -30,6 +30,7 @@ import {
   rewriteExports,
   rewriteLegacyNamespace,
   rewriteGoog,
+  rewriteMergeImports,
 } from "./rewriters.js";
 import { execShellCommand, appendLineToFile } from "./execshellcommand.js";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT, GOOG_DIR } from "./config.js";
@@ -171,7 +172,10 @@ async function rewrite(OUT_DIR) {
       // 5. Rewrite goog.js utilities
       const [filestr6] = rewriteGoog(filestr5);
 
-      await writeFile(`${OUT_DIR}/${outFilename}`, filestr6);
+      // 6. Merge imports from same source
+      const [filestr7] = rewriteMergeImports(filestr6);
+
+      await writeFile(`${OUT_DIR}/${outFilename}`, filestr7);
     })
   );
 }
