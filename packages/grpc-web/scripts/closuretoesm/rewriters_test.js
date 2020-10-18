@@ -107,11 +107,9 @@ testRewriter({
       input: `
             exports = UnaryResponse;
 
-
 `,
       output: `
 export { UnaryResponse };
-
 
 `,
     },
@@ -127,6 +125,23 @@ export { UnaryInterceptor, StreamInterceptor };`,
     {
       input: "exports.GenericTransportInterface;",
       output: "let GenericTransportInterface;",
+    },
+  ],
+});
+
+testRewriter({
+  title:
+    "Given exports.NAME = something, we should rewrite to export const NAME = something",
+  rewriter: rewriteEsExports,
+  cases: [
+    {
+      input: "exports.HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
+      output: "export const HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
+    },
+    {
+      input: "exports.generateHttpHeadersOverwriteParam = function(headers) {",
+      output:
+        "export const generateHttpHeadersOverwriteParam = function(headers) {",
     },
   ],
 });
