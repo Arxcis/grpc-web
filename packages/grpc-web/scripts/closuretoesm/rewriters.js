@@ -127,13 +127,21 @@ const googSymbols = [
 export function rewriteGoog(filestr) {
   const seen = new Set();
   for (const googSymbol of googSymbols) {
-    filestr = filestr.replace(new RegExp(`goog\\.${googSymbol}`, "g"), () => {
-      seen.add(googSymbol);
-      return googSymbol;
-    });
+    filestr = filestr.replace(
+      new RegExp(`goog\\.${googSymbol}([\(\.\ ])`, "g"),
+      (...parts) => {
+        const [a, suffix] = parts;
+        seen.add(googSymbol);
+        return `${googSymbol}${suffix}`;
+      }
+    );
+  }
+  const seenArray = [...seen];
+  if (seenArray.length === 0) {
+    return [filestr];
   }
 
-  filestr = `${[...seen]
+  filestr = `${seenArray
     .map((it) => `import { ${it} } from "./goog.js";`)
     .join("\n")}\n${filestr}`;
 

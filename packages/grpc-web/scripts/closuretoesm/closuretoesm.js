@@ -56,7 +56,7 @@ async function main() {
   await provideGoog(OUT_DIR, GOOG_DIR);
   log("Step ✅", "Copied base.js and goog.js");
 
-  // await cleanup(OUT_DIR);
+  await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp .closure.js-files");
 
   await makeIndexJs(OUT_DIR);
@@ -129,48 +129,60 @@ async function cleanup(OUT_DIR) {
  *    - Writes `.js`-files back to `OUT_DIR`.
  */
 async function rewrite(OUT_DIR) {
-  const filenames = await readdir(OUT_DIR);
-  const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
+  {
+    const filenames = await readdir(OUT_DIR);
+    const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
 
-  await Promise.all(
-    closureFiles.map(async (fileName) => {
-      const outFilename = fileName.replace(".closure.js", ".js");
-      const file = await readFile(join(OUT_DIR, fileName));
-      let res = file.toString();
+    await Promise.all(
+      closureFiles.map(async (fileName) => {
+        const outFilename = fileName.replace(".closure.js", ".js");
+        const file = await readFile(join(OUT_DIR, fileName));
+        let res = file.toString();
 
-      res = rewriteModules(res);
-      // Re-export in index.js-file
-      await Promise.all(
-        res[1].map(async ({ exportName, packageName }) => {
-          await appendLineToFile(
-            `export { ${exportName} } from \\"./${outFilename}\\";`,
-            `${OUT_DIR}/${packageName}.index.js`
-          );
-        })
-      );
+        res = rewriteModules(res);
+        // Re-export in index.js-file
+        await Promise.all(
+          res[1].map(async ({ exportName, packageName }) => {
+            await appendLineToFile(
+              `export { ${exportName} } from \\"./${outFilename}\\";`,
+              `${OUT_DIR}/${packageName}.index.js`
+            );
+          })
+        );
 
-      res = rewriteRequires(res[0]);
-      res = rewriteExports(res[0]);
+        res = rewriteRequires(res[0]);
+        res = rewriteExports(res[0]);
 
-      // Re-export in index.js-file if not already re-exported
-      const parts = fileName.replace(".closure.js", "").split(".");
-      const packageName = parts.slice(0, parts.length - 1).join(".");
-      await Promise.all(
-        res[1].map(async ({ exportName }) => {
-          await execShellCommand(
-            `echo "export { ${exportName} } from \\"./${outFilename}\\";" >> "${OUT_DIR}/${packageName}.index.js"`
-          );
-        })
-      );
+        // Re-export in index.js-file if not already re-exported
+        const parts = fileName.replace(".closure.js", "").split(".");
+        const packageName = parts.slice(0, parts.length - 1).join(".");
+        await Promise.all(
+          res[1].map(async ({ exportName }) => {
+            await execShellCommand(
+              `echo "export { ${exportName} } from \\"./${outFilename}\\";" >> "${OUT_DIR}/${packageName}.index.js"`
+            );
+          })
+        );
 
-      res = rewriteLegacyNamespace(res[0]);
-      res = rewriteGoog(res[0]);
-      res = rewriteEsImports(res[0]);
-      res = rewriteEsExports(res[0]);
+        res = rewriteLegacyNamespace(res[0]);
+        res = rewriteGoog(res[0]);
+        res = rewriteEsImports(res[0]);
 
-      await writeFile(`${OUT_DIR}/${outFilename}`, res[0]);
-    })
-  );
+        await writeFile(`${OUT_DIR}/${outFilename}`, res[0]);
+      })
+    );
+  }
+  {
+    const filenames = await readdir(OUT_DIR);
+    const indexFiles = filenames.filter((it) => it.endsWith(".index.js"));
+    await Promise.all(
+      indexFiles.map(async (filename) => {
+        const file = (await readFile(`${OUT_DIR}/${filename}`)).toString();
+        const [res] = rewriteEsExports(file);
+        await writeFile(`${OUT_DIR}/${filename}`, res);
+      })
+    );
+  }
 }
 
 /**

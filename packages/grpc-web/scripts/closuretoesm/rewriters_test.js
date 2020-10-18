@@ -299,6 +299,14 @@ import { getUid } from "./goog.js";
 import { isArray } from "./goog.js";
 if (isArrayLike(arg) && !isArray(arg)) {`,
     },
+    {
+      input: "goog.bind",
+      output: "goog.bind",
+    },
+    {
+      input: "goog.bind()",
+      output: `import { bind } from "./goog.js";\nbind()`,
+    },
   ],
 });
 
