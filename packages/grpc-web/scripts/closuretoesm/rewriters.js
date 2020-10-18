@@ -248,28 +248,54 @@ export function rewriteRequires(filestr) {
   return [rewritten];
 }
 
-// @rewriter function
+/**
+ * @rewriter function for exports
+ *  - Exports have many variations
+ *
+ * Examples:
+ *   exports.GenericTransportInterface;
+ *   exports = UnaryResponse;
+ *   exports.Status = Status;
+ *   exports.HTTP_HEADERS_PARAM_NAME = '$httpHeaders';
+ *   exports.generateHttpHeadersOverwriteParam = function(headers) {
+ *   exports = {
+ *     UnaryInterceptor,
+ *     StreamInterceptor
+ *   };
+ *
+ *   It's a mess
+ */
 export function rewriteExports(filestr) {
   const allExports = [];
-  const rewritten = filestr.replace(
-    /[ \t]*exports([.]([\w.]+))?(\s*=\s*{?([\w\s,]+)}?)?;?/,
-    (...parts) => {
-      const [, , leftSideDeclaration, , exportstr] = parts;
-      if (exportstr === undefined) {
-        return `let ${leftSideDeclaration};`;
-      }
-      const exports = exportstr.replace(/\s/g, "").split(",");
 
-      // Check if export already exists
-      const outstr = `export { ${exports.join(", ")} };`;
-      if (filestr.includes(outstr)) {
-        return "";
-      }
+  // exports = { --> export {
+  let rewritten = filestr
+    .replace(/exports\s*=\s*\{([\s\w,]+)\};/, (...parts) => {
+      const [, exportNameStr] = parts;
+      const exportNames = exportNameStr.split(",").map((it) => it.trim());
+      allExports.push(...exportNames);
 
-      allExports.push(...exports.map((it) => ({ exportName: it })));
-      return outstr;
-    }
-  );
+      return `export { ${exportNames.join(", ")} };`;
+    })
+
+    // exports.name = (''|function()) --> export const name = (''|fun)
+    .replace(/exports\.([\w_]+)\s*=\s*('|function)/g, (...parts) => {
+      const [, exportName, tatOrFunc] = parts;
+      allExports.push(exportName);
+      return `export const ${exportName} = ${tatOrFunc}`;
+    })
+
+    // exports(.name)? = name;
+    .replace(/^exports.(\w+)?\s*=\s*(\w+);/g, (...parts) => {
+      return ``;
+    })
+
+    // exports.name;
+    .replace(/^exports.(\w+);/g, (...parts) => {
+      const [, exportName] = parts;
+      return `export let ${exportName};`;
+    });
+
   return [rewritten, allExports];
 }
 
