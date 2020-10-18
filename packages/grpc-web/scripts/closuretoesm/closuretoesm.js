@@ -77,6 +77,14 @@ async function provideGoog(OUT_DIR, GOOG_DIR) {
       `import { goog } from \\"./base.js\\";`,
       `${OUT_DIR}/goog.js`
     ),
+    appendLineToFile(
+      `export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;`,
+      `${OUT_DIR}/goog.js`
+    ),
+    appendLineToFile(
+      `export const getScriptNonce = goog.getScriptNonce;`,
+      `${OUT_DIR}/goog.js`
+    ),
   ]);
 }
 
@@ -88,13 +96,14 @@ async function provideGoog(OUT_DIR, GOOG_DIR) {
  */
 async function makeIndexJs(OUT_DIR) {
   const indexJs = `/**
- * @fileoverview Export symbols needed by generated code in ES modules style
+ * @fileoverview Export symbols to the ouside world ES modules style
  */
 export { AbstractClientBase } from "./grpc.web.index.js";
 export { GrpcWebClientBase } from "./grpc.web.index.js";
 export { StatusCode } from "./grpc.web.index.js";
 export { MethodDescriptor } from "./grpc.web.index.js";
 export { MethodType } from "./grpc.web.index.js";
+
 `;
   await writeFile(`${OUT_DIR}/index.js`, indexJs);
 }

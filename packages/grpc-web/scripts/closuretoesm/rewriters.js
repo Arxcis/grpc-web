@@ -42,6 +42,8 @@ const googSymbols = [
   "scope",
   "defineClass",
   "declareModuleId",
+  "createTrustedTypesPolicy",
+  "getScriptNonce",
 ].sort((a, b) => b.length - a.length); // Sort most specific (longest-symbol) first.
 
 // @rewriter function
@@ -50,15 +52,12 @@ export function rewriteGoog(filestr) {
   for (const googSymbol of googSymbols) {
     filestr = filestr.replace(new RegExp(`goog\\.${googSymbol}`, "g"), () => {
       seen.add(googSymbol);
-      return `goog${upperCaseFirstLetter(googSymbol)}`;
+      return googSymbol;
     });
   }
 
   filestr = `${[...seen]
-    .map(
-      (it) =>
-        `import { ${it} as goog${upperCaseFirstLetter(it)} } from "./goog.js";`
-    )
+    .map((it) => `import { ${it} } from "./goog.js";`)
     .join("\n")}\n${filestr}`;
 
   return [filestr];

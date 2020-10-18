@@ -276,7 +276,7 @@ testRewriter({
 
 testRewriter({
   title:
-    "Given goog.<someFunction>(), it should be imported from goog.js as goog<SomeFunction>",
+    "Given goog.<someFunction>(), it should be imported from goog.js as <SomeFunction>",
   rewriter: rewriteGoog,
   cases: [
     {
@@ -284,18 +284,18 @@ testRewriter({
   return goog.isObject(item) ? 'o' + goog.getUid(item) :
   (typeof item).charAt(0) + item;
   `,
-      output: `import { isObject as googIsObject } from "./goog.js";
-import { getUid as googGetUid } from "./goog.js";
+      output: `import { isObject } from "./goog.js";
+import { getUid } from "./goog.js";
 
-  return googIsObject(item) ? 'o' + googGetUid(item) :
+  return isObject(item) ? 'o' + getUid(item) :
   (typeof item).charAt(0) + item;
   `,
     },
     {
       input: `if (goog.isArrayLike(arg) && !goog.isArray(arg)) {`,
-      output: `import { isArrayLike as googIsArrayLike } from "./goog.js";
-import { isArray as googIsArray } from "./goog.js";
-if (googIsArrayLike(arg) && !googIsArray(arg)) {`,
+      output: `import { isArrayLike } from "./goog.js";
+import { isArray } from "./goog.js";
+if (isArrayLike(arg) && !isArray(arg)) {`,
     },
   ],
 });
