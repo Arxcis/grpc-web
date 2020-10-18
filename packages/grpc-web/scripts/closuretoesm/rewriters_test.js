@@ -254,6 +254,10 @@ testRewriter({
       input: `goog.requireType('goog.mytype.Example');`,
       output: `import { Example } from "./goog.mytype.index.js";`,
     },
+    {
+      input: `goog.require('goog.events.EventId');`,
+      output: `import { EventId } from "./goog.events.index.js";`,
+    },
   ],
 });
 
@@ -367,6 +371,26 @@ export { XmlHttp } from "./goog.net.xmlhttp.js";
       output: `
 export { DefaultXmlHttpFactory, XmlHttp, XmlHttpDefines } from "./goog.net.xmlhttp.js";
 export { XhrLike } from "./goog.net.xhrlike.js";
+`,
+    },
+  ],
+});
+
+testRewriter({
+  title:
+    "Regression-test of bug where moduleRewriter() rewrote goog.requires() also, when similar names",
+  rewriter: rewriteModules,
+  cases: [
+    {
+      input: `
+goog.provide('goog.events.Event');
+goog.require('goog.events.EventId');
+`,
+      output: `
+export { Event };
+let Event = {};
+
+goog.require('goog.events.EventId');
 `,
     },
   ],

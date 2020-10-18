@@ -151,55 +151,46 @@ export function rewriteGoog(filestr) {
 }
 
 // @rewriter function
-export function rewriteModules(filestr) {
-  const exports = [];
+export function rewriteModules(filestr, filename) {
+  const paths = [];
 
   let rewritten = filestr.replace(
     /^([ \t]*goog.(provide|module)[(]'([\w.]+)'[)]);?$/gm,
-    (it, b, c, moduleName) => {
-      const packageName = resolvePackageName(moduleName);
-      const exportName = moduleName.split(".").pop();
-      exports.push({
-        exportName,
+    (...parts) => {
+      const [it, , , pathName] = parts;
+      const packageName = resolvePackageName(pathName);
+      const lastPart = pathName.split(".").pop();
+      paths.push({
+        lastPart,
         packageName,
-        moduleName,
+        pathName,
       });
 
       if (it.includes("provide")) {
-        return `export { ${exportName} };\nlet ${exportName} = {};\n`;
+        return `export { ${lastPart} };\nlet ${lastPart} = {};\n`;
       } else {
-        return `export { ${exportName} };`;
+        return `export { ${lastPart} };`;
       }
     }
   );
+  rewritten = rewritePathsExceptFilepaths(paths, rewritten);
 
-  // Sort exports to make sure:
-  //   'goog.asserts.AssertionType is rewritten before
-  //   'goog.asserts
-  exports.sort((a, b) => b.moduleName.length - a.moduleName.length);
-
-  rewritten = exports.reduce(
-    (acc, { moduleName, exportName }) =>
-      acc.replace(new RegExp(moduleName, "g"), exportName),
-    rewritten
-  );
-
-  return [rewritten, exports];
+  return [rewritten, paths];
 }
 
 export const REGEX_REQUIRE = /^[ \t]*((const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*)?goog.require(Type)?[(]'([\w.]+)'[)];?[ \t]*$/gm;
 
 // @rewriter function
 export function rewriteRequires(filestr, filename) {
-  const googImports = [];
+  const paths = [];
   const rewritten = filestr
     // ^googRequire(Type)?('goog.debug.Error');
     .replace(/^goog.require(Type)?[(]'([\w.]+)'[)];?/gm, (...parts) => {
-      const [, , requireName] = parts;
-      const packageName = resolvePackageName(requireName);
-      const lastPart = requireName.split(".").pop();
-      googImports.push({
-        requireName,
+      const [whole, , pathName] = parts;
+      const packageName = resolvePackageName(pathName);
+      const lastPart = pathName.split(".").pop();
+      paths.push({
+        pathName,
         lastPart,
       });
 
@@ -209,13 +200,13 @@ export function rewriteRequires(filestr, filename) {
     .replace(
       /^(const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*goog.require(Type)?[(]'([\w.]+)'[)];?$/gm,
       (...parts) => {
-        const [, , varName, , , requireName] = parts;
-        const packageName = resolvePackageName(requireName);
-        const lastPart = requireName.split(".").pop();
+        const [, , varName, , , pathName] = parts;
+        const packageName = resolvePackageName(pathName);
+        const lastPart = pathName.split(".").pop();
 
         const importSymbols = varName.split(",").map((it) => it.trim());
-        googImports.push({
-          requireName,
+        paths.push({
+          pathName,
           lastPart,
         });
 
@@ -231,22 +222,7 @@ export function rewriteRequires(filestr, filename) {
       }
     );
 
-  // Sort imports to make sure:
-  //   'goog.asserts.AssertionType is rewritten before
-  //   'goog.asserts
-  googImports.sort((a, b) => b.requireName.length - a.requireName.length);
-  const reduced = googImports.reduce(
-    (acc, { requireName, lastPart }) =>
-      acc.replace(
-        // Dont replace ./goog"-paths
-        new RegExp("([^\\/])(" + requireName + ")", "g"),
-        (...parts) => {
-          const [, prefix] = parts;
-          return `${prefix}${lastPart}`;
-        }
-      ),
-    rewritten
-  );
+  const reduced = rewritePathsExceptFilepaths(paths, rewritten);
 
   return [reduced];
 }
@@ -289,12 +265,12 @@ export function rewriteExports(filestr) {
     })
 
     // exports(.name)? = name;
-    .replace(/exports.(\w+)?\s*=\s*(\w+);\n/g, (match) => {
+    .replace(/exports(\.\w+)?\s*=\s*(\w+);\n/g, (match) => {
       return ``;
     })
 
     // exports.name;
-    .replace(/^exports.(\w+);$/gm, (...parts) => {
+    .replace(/^exports\.(\w+);$/gm, (...parts) => {
       const [, exportName] = parts;
       return `let ${exportName};`;
     })
@@ -326,6 +302,15 @@ function resolvePackageName(moduleName) {
 }
 
 // @helper function
-function upperCaseFirstLetter(word) {
-  return word.replace(/^./, (it) => it.toUpperCase());
+function rewritePathsExceptFilepaths(paths, filestr) {
+  paths.sort((a, b) => b.pathName.length - a.pathName.length);
+
+  return paths.reduce(
+    (acc, { pathName, lastPart }) =>
+      acc.replace(new RegExp("([^/'])(" + pathName + ")", "g"), (...parts) => {
+        const [, prefix] = parts;
+        return `${prefix}${lastPart}`;
+      }),
+    filestr
+  );
 }
