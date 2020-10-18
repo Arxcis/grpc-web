@@ -25,15 +25,9 @@ export function rewriteEsExports(filestr) {
 
       const res = Object.entries(merged)
         .map(([fromName, exportNames]) => {
-          if (exportNames.length < 3) {
-            return `export { ${exportNames
-              .sort((a, b) => a.localeCompare(b))
-              .join(", ")} } from ${fromName};`;
-          } else {
-            return `export {
-  ${exportNames.sort((a, b) => a.localeCompare(b)).join(",\n  ")}
-} from ${fromName};`;
-          }
+          return `export { ${exportNames
+            .sort((a, b) => a.localeCompare(b))
+            .join(", ")} } from ${fromName};`;
         })
         .sort((a, b) => b.length - a.length)
         .join("\n");
@@ -68,15 +62,9 @@ export function rewriteEsImports(filestr) {
 
       const res = Object.entries(merged)
         .map(([fromName, importNames]) => {
-          if (importNames.length < 3) {
-            return `import { ${importNames
-              .sort((a, b) => a.localeCompare(b))
-              .join(", ")} } from ${fromName};`;
-          } else {
-            return `import {
-  ${importNames.sort((a, b) => a.localeCompare(b)).join(",\n  ")}
-} from ${fromName};`;
-          }
+          return `import { ${importNames
+            .sort((a, b) => a.localeCompare(b))
+            .join(", ")} } from ${fromName};`;
         })
         .sort((a, b) => b.length - a.length)
         .join("\n");
