@@ -1,14 +1,25 @@
 const aliases = [
-  [/^goog\.require\('goog.asserts'\);$/gm, "googAsserts"],
-  [/^goog\.require\('goog.dom.asserts'\);$/gm, "domAsserts"],
+  [
+    /^goog\.require\('goog\.asserts'\);$/gm,
+    (it) => `const googAsserts = ${it}`,
+  ],
+  [
+    /^goog\.require\('goog\.dom\.asserts'\);$/gm,
+    (it) => `const domAsserts = ${it}`,
+  ],
+  [
+    /^goog\.require\('goog\.debug\.Logger'\);$/gm,
+    (it) => `const debugLogger = ${it}`,
+  ],
+  [
+    /^goog\.require\('goog\.debug\.LogRecord'\);$/gm,
+    (it) => `const debugLogRecord = ${it}`,
+  ],
 ];
 // @rewriter function
 export function rewriteAliases(filestr) {
-  for (const [pattern, alias] of aliases) {
-    filestr = filestr.replace(pattern, (it) => {
-      const line = `const ${alias} = ${it}`;
-      return line;
-    });
+  for (const [pattern, aliaser] of aliases) {
+    filestr = filestr.replace(pattern, aliaser);
   }
 
   return [filestr];
