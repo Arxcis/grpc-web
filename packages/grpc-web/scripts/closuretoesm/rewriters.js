@@ -119,8 +119,10 @@ const googSymbols = [
   "scope",
   "defineClass",
   "declareModuleId",
+  // Patched in
   "createTrustedTypesPolicy",
   "getScriptNonce",
+  "FEATURESET_YEAR",
 ].sort((a, b) => b.length - a.length); // Sort most specific (longest-symbol) first.
 
 // @rewriter function
