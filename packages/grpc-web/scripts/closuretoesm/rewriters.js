@@ -291,13 +291,13 @@ export function rewriteExports(filestr) {
     })
 
     // exports.name;
-    .replace(/^exports.(\w+);$/m, (...parts) => {
+    .replace(/^exports.(\w+);$/gm, (...parts) => {
       const [, exportName] = parts;
       return `export let ${exportName};`;
     })
 
     // exports.generateHttpHeadersOverwriteParam(headers)); -> generateHttpHeadersOverwriteParam(headers));
-    .replace(/exports\.(\w+)(\(\w*\))/, (...parts) => {
+    .replace(/exports\.(\w+)(\(\w*\))/g, (...parts) => {
       const [match, exportName, funcCall] = parts;
       return `${exportName}${funcCall}`;
     });

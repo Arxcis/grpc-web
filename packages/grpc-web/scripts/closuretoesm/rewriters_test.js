@@ -137,6 +137,12 @@ testRewriter({
       input: "exports.generateHttpHeadersOverwriteParam(headers));",
       output: "generateHttpHeadersOverwriteParam(headers));",
     },
+    {
+      input:
+        "  var httpHeaders = exports.generateHttpHeadersOverwriteParam(extraHeaders);",
+      output:
+        "  var httpHeaders = generateHttpHeadersOverwriteParam(extraHeaders);",
+    },
   ],
 });
 
