@@ -55,7 +55,7 @@ async function main() {
   log("Step ✅", "Copied base.js and goog.js");
 
   // await cleanup(OUT_DIR);
-  log("Step ✅", "Cleaned up temp files");
+  log("Step ✅", "Cleaned up temp .closure.js-files");
 
   await makeIndexJs(OUT_DIR);
   log("Step ✅", "Created index.js");
@@ -75,7 +75,7 @@ async function provideGoog(OUT_DIR, GOOG_DIR) {
     appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
     appendLineToFile(
       `import { goog } from \\"./base.js\\";`,
-      `${OUT_DIR}/base.js`
+      `${OUT_DIR}/goog.js`
     ),
   ]);
 }
