@@ -21,6 +21,11 @@ export function rewriteModules(filestr) {
     }
   );
 
+  // Sort exports to make sure:
+  //   'goog.asserts.AssertionType is rewritten before
+  //   'goog.asserts
+  exports.sort((a, b) => b.moduleName.length - a.moduleName.length);
+
   rewritten = exports.reduce(
     (acc, { moduleName, exportName }) =>
       acc.replace(new RegExp(moduleName, "g"), exportName),
@@ -71,6 +76,11 @@ export function rewriteRequires(filestr) {
     }
   });
 
+  // Sort exports to make sure:
+  //   'goog.asserts.AssertionType is rewritten before
+  //   'goog.asserts
+
+  imports.sort((a, b) => b.requireName.length - a.requireName.length);
   rewritten = imports.reduce(
     (acc, { requireName, importName }) =>
       acc.replace(new RegExp(requireName, "g"), importName),
