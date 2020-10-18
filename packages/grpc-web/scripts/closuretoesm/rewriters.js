@@ -128,7 +128,7 @@ export function rewriteGoog(filestr) {
   const seen = new Set();
   for (const googSymbol of googSymbols) {
     filestr = filestr.replace(
-      new RegExp(`goog\\.${googSymbol}([\(\.\ ])`, "g"),
+      new RegExp(`goog\\.${googSymbol}([^\w])`, "g"),
       (...parts) => {
         const [a, suffix] = parts;
         seen.add(googSymbol);

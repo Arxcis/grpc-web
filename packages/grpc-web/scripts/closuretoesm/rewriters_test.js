@@ -307,6 +307,10 @@ if (isArrayLike(arg) && !isArray(arg)) {`,
       input: "goog.bind()",
       output: `import { bind } from "./goog.js";\nbind()`,
     },
+    {
+      input: "let a = goog.DISALLOW_TEST_ONLY_CODE;\n",
+      output: `import { DISALLOW_TEST_ONLY_CODE } from "./goog.js";\nlet a = DISALLOW_TEST_ONLY_CODE;\n`,
+    },
   ],
 });
 
