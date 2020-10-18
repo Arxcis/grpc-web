@@ -4,7 +4,8 @@ import {
   rewriteExports,
   rewriteLegacyNamespace,
   rewriteGoog,
-  rewriteMergeImports,
+  rewriteEsImports,
+  rewriteEsExports,
 } from "./rewriters.js";
 
 testRewriter({
@@ -303,8 +304,8 @@ if (isArrayLike(arg) && !isArray(arg)) {`,
 
 testRewriter({
   title:
-    "Given multiple imports from the same source, it should be put on a single line sorted by length",
-  rewriter: rewriteMergeImports,
+    "Given multiple consecutive imports, they should be merged to have 1 line per source file",
+  rewriter: rewriteEsImports,
   cases: [
     {
       input: `
@@ -319,6 +320,26 @@ import { internal } from "./goog.string.index.js";
 import { Const, internal, TypedString } from "./goog.string.index.js";
 import { array as Array, asserts } from "./goog.index.js";
 import { SafeUrl } from "./goog.html.index.js";
+`,
+    },
+  ],
+});
+
+testRewriter({
+  title:
+    "Given multiple concecutive exports, they should be merged to have 1 line per source file.",
+  rewriter: rewriteEsExports,
+  cases: [
+    {
+      input: `
+export { XhrLike } from "./goog.net.xhrlike.js";
+export { DefaultXmlHttpFactory } from "./goog.net.xmlhttp.js";
+export { XmlHttpDefines } from "./goog.net.xmlhttp.js";
+export { XmlHttp } from "./goog.net.xmlhttp.js";
+`,
+      output: `
+export { DefaultXmlHttpFactory, XmlHttp, XmlHttpDefines } from "./goog.net.xmlhttp.js";
+export { XhrLike } from "./goog.net.xhrlike.js";
 `,
     },
   ],

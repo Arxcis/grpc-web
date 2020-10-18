@@ -1,5 +1,44 @@
 // @rewriter function
-export function rewriteMergeImports(filestr) {
+export function rewriteEsExports(filestr) {
+  const rewritten = filestr.replace(
+    /(export { (\w+) } from \"\.\/[\w.]+\.js\";\n)+/g,
+    (...parts) => {
+      const [firstPart] = parts;
+      const matches = firstPart.matchAll(
+        /export { (\w+) } from (\"\.\/[\w.]+\.js\");/g
+      );
+      const names = [...matches].map(([a, exportName, fromName]) => {
+        return {
+          exportName,
+          fromName,
+        };
+      });
+
+      const merged = names.reduce((acc, { fromName, exportName }) => {
+        return {
+          ...acc,
+          [fromName]: acc[fromName]
+            ? [exportName, ...acc[fromName]]
+            : [exportName],
+        };
+      }, {});
+
+      const res = Object.entries(merged)
+        .map(([fromName, exportNames]) => {
+          return `export { ${exportNames
+            .sort((a, b) => a.localeCompare(b))
+            .join(", ")} } from ${fromName};`;
+        })
+        .sort((a, b) => b.length - a.length)
+        .join("\n");
+
+      return `${res}\n`;
+    }
+  );
+  return [rewritten];
+}
+// @rewriter function
+export function rewriteEsImports(filestr) {
   const rewritten = filestr.replace(
     /(import { (\w+( as \w+)?) } from "\.\/[\w\.]+\.js";\n)+/g,
     (...parts) => {
@@ -21,7 +60,7 @@ export function rewriteMergeImports(filestr) {
         };
       }, {});
 
-      const mergedstr = Object.entries(merged)
+      const res = Object.entries(merged)
         .map(([fromName, importNames]) => {
           return `import { ${importNames
             .sort((a, b) => a.localeCompare(b))
@@ -30,7 +69,7 @@ export function rewriteMergeImports(filestr) {
         .sort((a, b) => b.length - a.length)
         .join("\n");
 
-      return `${mergedstr}\n`;
+      return `${res}\n`;
     }
   );
   return [rewritten];

@@ -30,7 +30,8 @@ import {
   rewriteExports,
   rewriteLegacyNamespace,
   rewriteGoog,
-  rewriteMergeImports,
+  rewriteEsImports,
+  rewriteEsExports,
 } from "./rewriters.js";
 import { execShellCommand, appendLineToFile } from "./execshellcommand.js";
 import { OUT_DIR, INCLUDE_DIRS, ENTRYPOINT, GOOG_DIR } from "./config.js";
@@ -133,49 +134,41 @@ async function rewrite(OUT_DIR) {
 
   await Promise.all(
     closureFiles.map(async (fileName) => {
-      // rewrite require
-      const file = await readFile(join(OUT_DIR, fileName));
-      const filestr0 = file.toString();
-
       const outFilename = fileName.replace(".closure.js", ".js");
+      const file = await readFile(join(OUT_DIR, fileName));
+      let res = file.toString();
 
-      // 1. goog.modules
-      const [filestr1, modules] = rewriteModules(filestr0);
+      res = rewriteModules(res);
+      // Re-export in index.js-file
       await Promise.all(
-        modules.map(async ({ exportName, packageName }) => {
+        res[1].map(async ({ exportName, packageName }) => {
           await appendLineToFile(
-            `export { ${exportName} } from \\"./${outFilename}\\"`,
+            `export { ${exportName} } from \\"./${outFilename}\\";`,
             `${OUT_DIR}/${packageName}.index.js`
           );
         })
       );
 
-      // 2. goog.requires
-      const [filestr2] = rewriteRequires(filestr1);
+      res = rewriteRequires(res[0]);
+      res = rewriteExports(res[0]);
 
-      // 3. goog.exports
-      const [filestr4, exports] = rewriteExports(filestr2);
+      // Re-export in index.js-file if not already re-exported
       const parts = fileName.replace(".closure.js", "").split(".");
       const packageName = parts.slice(0, parts.length - 1).join(".");
-
       await Promise.all(
-        exports.map(async ({ exportName }) => {
+        res[1].map(async ({ exportName }) => {
           await execShellCommand(
-            `echo "export { ${exportName} } from \\"./${outFilename}\\"" >> "${OUT_DIR}/${packageName}.index.js"`
+            `echo "export { ${exportName} } from \\"./${outFilename}\\";" >> "${OUT_DIR}/${packageName}.index.js"`
           );
         })
       );
 
-      // 4. goog legacy namespaces
-      const [filestr5] = rewriteLegacyNamespace(filestr4);
+      res = rewriteLegacyNamespace(res[0]);
+      res = rewriteGoog(res[0]);
+      res = rewriteEsImports(res[0]);
+      res = rewriteEsExports(res[0]);
 
-      // 5. Rewrite goog.js utilities
-      const [filestr6] = rewriteGoog(filestr5);
-
-      // 6. Merge imports from same source
-      const [filestr7] = rewriteMergeImports(filestr6);
-
-      await writeFile(`${OUT_DIR}/${outFilename}`, filestr7);
+      await writeFile(`${OUT_DIR}/${outFilename}`, res[0]);
     })
   );
 }
