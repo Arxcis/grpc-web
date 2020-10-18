@@ -145,7 +145,7 @@ export function rewriteModules(filestr) {
   const exports = [];
 
   let rewritten = filestr.replace(
-    /^([ \t]*goog.(provide|module)[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)]);?$/gm,
+    /^([ \t]*goog.(provide|module)[(]'([\w.]*)'[)]);?$/gm,
     (it, b, c, moduleName) => {
       const packageName = resolvePackageName(moduleName);
       const exportName = moduleName.split(".").pop();
@@ -179,10 +179,10 @@ export function rewriteModules(filestr) {
 
 // REGEX_REQUIRE parts
 const CONSTVAR = /(const|var)\s+/; //                 const|var
-const SYMBOLS = /{?\s*([a-zA-Z][a-zA-Z0-9]*(,\s*[a-zA-Z][a-zA-Z0-9]*)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
+const SYMBOLS = /{?\s*([\w]+(,\s*[\w]+)*)\s*}?/; //  {StreamInterceptor, UnaryInterceptor}
 const EQUAL = /\s+=\s+/; //                           =
 const REQUIRE = /goog.require(Type)?/; //             goog.require(Type)?
-const NAME = /[(]'([a-zA-Z][.a-zA-Z0-9]*)'[)];?/; //  ('goog.util');
+const NAME = /[(]'([\w.]+)'[)];?/; //  ('goog.util');
 
 // Example of full string:
 // (const {StreamInterceptor, UnaryInterceptor} = )?goog.require('grpc.web.Interceptor');
@@ -242,7 +242,7 @@ export function rewriteRequires(filestr) {
 export function rewriteExports(filestr) {
   const allExports = [];
   const rewritten = filestr.replace(
-    /[ \t]*exports([.]([a-zA-Z0-9.]+))?(\s*=\s*{?([a-zA-Z0-9\s,]+)}?)?;?/,
+    /[ \t]*exports([.]([\w.]+))?(\s*=\s*{?([\w\s,]+)}?)?;?/,
     (...parts) => {
       const [, , leftSideDeclaration, , exportstr] = parts;
       if (exportstr === undefined) {
