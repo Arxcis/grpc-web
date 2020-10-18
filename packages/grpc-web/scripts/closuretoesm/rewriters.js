@@ -80,7 +80,7 @@ export function rewriteModules(filestr) {
       });
 
       if (it.includes("provide")) {
-        return `export { ${exportName} };\nlet ${exportName} = {};`;
+        return `export { ${exportName} };\nlet ${exportName} = {};\n`;
       } else {
         return `export { ${exportName} };`;
       }

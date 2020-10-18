@@ -50,6 +50,7 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
 export { array };
 let array = {};
 
+
 array.peek = function(array) {
   return array[array.length - 1];
 };
@@ -67,8 +68,10 @@ goog.asserts.AssertionError = function(messagePattern, messageArgs) {
       output: `
 export { asserts };
 let asserts = {};
+
 export { AssertionError };
 let AssertionError = {};
+
 AssertionError = function(messagePattern, messageArgs) {
 `,
     },
@@ -132,7 +135,7 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: `export { Example };\nlet Example = {};`,
+      output: `export { Example };\nlet Example = {};\n`,
     },
     {
       input: `
@@ -144,6 +147,7 @@ goog.provide('goog.my.Example');
 
 export { Example };
 let Example = {};
+
 `,
     },
   ],
@@ -163,8 +167,10 @@ goog.Example;
       output: `
 export { Example };
 let Example = {};
+
 export { Two };
 let Two = {};
+
 
 Example;
 `,
@@ -182,12 +188,16 @@ goog.provide('goog.Example.Ten');
 
 export { Example };
 let Example = {};
+
 export { Two };
 let Two = {};
+
 export { Four };
 let Four = {};
+
 export { Ten };
 let Ten = {};
+
 `,
     },
   ],
