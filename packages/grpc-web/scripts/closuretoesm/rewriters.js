@@ -194,7 +194,9 @@ export function rewriteModules(filestr, filename) {
         pathName,
       });
 
-      if (filestr.match(new RegExp(`(class|function|const)\\s+${lastPart}`))) {
+      if (
+        filestr.match(new RegExp(`(class|function|const|let)\\s+${lastPart}`))
+      ) {
         return `export { ${lastPart} };`;
       } else if (filestr.match(new RegExp(`^[ \\t]*${pathName}`, "m"))) {
         return `export { ${lastPart} };\nlet ${lastPart} = {};\n`;

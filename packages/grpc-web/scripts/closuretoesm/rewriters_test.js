@@ -229,6 +229,14 @@ function Example() {
 export { Example };
 function Example() {
 `,
+      input: `
+goog.module('goog.my.Metadata');
+  let Metadata;
+`,
+      output: `
+export { Metadata };
+  let Metadata;
+`,
     },
   ],
 });
