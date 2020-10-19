@@ -181,7 +181,7 @@ export function rewriteModules(filestr, filename) {
         packageName,
         pathName,
       });
-      return `export { ${exportName} };\nlet ${exportName} = {};\n`;
+      return `let ${exportName} = {};\nexport { ${exportName} };\n`;
     })
     .replace(/^([ \t]*goog.module[(]'([\w.]+)'[)]);?$/m, (...parts) => {
       const [it, , pathName] = parts;
@@ -201,7 +201,7 @@ export function rewriteModules(filestr, filename) {
       ) {
         return `export { ${exportName} };`;
       } else {
-        return `export { ${exportName} };\nlet ${exportName} = {};\n`;
+        return `let ${exportName} = {};\nexport { ${exportName} };\n`;
       }
     });
 
