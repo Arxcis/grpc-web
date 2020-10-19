@@ -305,26 +305,18 @@ async function patch(OUT_DIR) {
     ),
     // Patch 4: Append some missing to base.js
     appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
-    // Patch 5: Append some missing exports to goog.js
+    // Patch 5: Append some missing exports and imports to goog.js
     appendLineToFile(
-      `import { goog } from \\"./base.js\\";`,
+      `
+import { goog } from \\"./base.js\\";
+export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;
+export const getScriptNonce = goog.getScriptNonce;
+export const FEATURESET_YEAR = goog.FEATURESET_YEAR;
+export const TRUSTED_TYPES_POLICY_NAME = goog.TRUSTED_TYPES_POLICY_NAME;
+`,
       `${OUT_DIR}/goog.js`
     ),
-    // Patch 5:
-    appendLineToFile(
-      `export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;`,
-      `${OUT_DIR}/goog.js`
-    ),
-    // Patch 5:
-    appendLineToFile(
-      `export const getScriptNonce = goog.getScriptNonce;`,
-      `${OUT_DIR}/goog.js`
-    ),
-    // Patch 5:
-    appendLineToFile(
-      `export const FEATURESET_YEAR = goog.FEATURESET_YEAR;`,
-      `${OUT_DIR}/goog.js`
-    ),
+
     /**
      *  Patch 6: Configure base.js to not automatically load closure deps
      *
