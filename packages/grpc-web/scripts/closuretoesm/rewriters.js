@@ -181,7 +181,7 @@ export function rewriteModules(filestr, filename) {
         packageName,
         pathName,
       });
-      return `let ${exportName} = {};\nexport { ${exportName} };\n`;
+      return `let ${exportName} = {};\n`;
     })
     .replace(/^([ \t]*goog.module[(]'([\w.]+)'[)]);?$/m, (...parts) => {
       const [it, , pathName] = parts;
@@ -199,9 +199,9 @@ export function rewriteModules(filestr, filename) {
           new RegExp(`^(class|function|const|let)\\s+${exportName}`, "m")
         )
       ) {
-        return `export { ${exportName} };`;
+        return ``;
       } else {
-        return `let ${exportName} = {};\nexport { ${exportName} };\n`;
+        return `let ${exportName} = {};\n`;
       }
     });
 
@@ -218,6 +218,11 @@ export function rewriteModules(filestr, filename) {
       }
     });
   }
+
+  // Defer exporting at the end of file
+  rewritten = `${rewritten}\nexport { ${paths
+    .map(({ exportName }) => exportName)
+    .join(", ")} };\n`;
 
   rewritten = rewritePathsExceptFilepaths(paths, rewritten);
 
