@@ -153,12 +153,13 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: `export { Example };\nlet Example = {};\n`,
+      output: ``,
     },
     {
       input: `
 
 goog.provide('goog.my.Example');
+goog.my.Example = 
 `,
 
       output: `
@@ -166,6 +167,7 @@ goog.provide('goog.my.Example');
 export { Example };
 let Example = {};
 
+Example = 
 `,
     },
   ],
@@ -186,36 +188,9 @@ goog.Example;
 export { Example };
 let Example = {};
 
-export { Two };
-let Two = {};
 
 
 Example;
-`,
-    },
-    {
-      input: `
-
-      goog.provide('goog.Example');
-      goog.provide('goog.Example.Two');
-goog.provide('goog.haa.ha.ha.Four');
-goog.provide('goog.Example.Ten');
-`,
-
-      output: `
-
-export { Example };
-let Example = {};
-
-export { Two };
-let Two = {};
-
-export { Four };
-let Four = {};
-
-export { Ten };
-let Ten = {};
-
 `,
     },
   ],
@@ -227,18 +202,33 @@ testRewriter({
   cases: [
     {
       input: `goog.module('goog.Example');`,
-      output: `export { Example };`,
+      output: ``,
     },
     {
       input: `
-  
-  goog.module('goog.my.Example');
-  `,
-
+goog.module('goog.my.Example');
+class Example =
+`,
       output: `
-  
 export { Example };
-  `,
+class Example =
+`,
+      input: `
+goog.module('goog.my.Example');
+const Example =
+`,
+      output: `
+export { Example };
+const Example =
+`,
+      input: `
+goog.module('goog.my.Example');
+function Example() {
+`,
+      output: `
+export { Example };
+function Example() {
+`,
     },
   ],
 });
@@ -379,18 +369,20 @@ export { XhrLike } from "./goog.net.xhrlike.js";
 
 testRewriter({
   title:
-    "Regression-test of bug where moduleRewriter() rewrote goog.requires() also, when similar names",
+    "Regression-test of bug where moduleRewriter() rewrote goog.requires() also, when similar names:",
   rewriter: rewriteModules,
   cases: [
     {
       input: `
 goog.provide('goog.events.Event');
+goog.events.Event;
 goog.require('goog.events.EventId');
 `,
       output: `
 export { Event };
 let Event = {};
 
+Event;
 goog.require('goog.events.EventId');
 `,
     },

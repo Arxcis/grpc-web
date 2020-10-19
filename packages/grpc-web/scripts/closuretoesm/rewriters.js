@@ -194,10 +194,12 @@ export function rewriteModules(filestr, filename) {
         pathName,
       });
 
-      if (it.includes("provide")) {
+      if (filestr.match(new RegExp(`(class|function|const)\\s+${lastPart}`))) {
+        return `export { ${lastPart} };`;
+      } else if (filestr.match(new RegExp(`^[ \\t]*${pathName}`, "m"))) {
         return `export { ${lastPart} };\nlet ${lastPart} = {};\n`;
       } else {
-        return `export { ${lastPart} };`;
+        return ``;
       }
     }
   );
@@ -219,6 +221,7 @@ export function rewriteRequires(filestr, filename) {
       const lastPart = pathName.split(".").pop();
       paths.push({
         pathName,
+        exportName: lastPart,
       });
 
       return `import { ${lastPart} } from "./${packageName}.index.js";`;
@@ -332,7 +335,14 @@ function resolvePackageName(moduleName) {
   return packageName;
 }
 
-// @helper function
+/**
+ * ## rewritePathsExceptFilepaths()
+ *
+ * @param {object} path
+ * @param {string} path.pathName
+ * @param {string} path.exportName
+ * @param {}
+ */
 function rewritePathsExceptFilepaths(paths, filestr) {
   paths.sort((a, b) => b.pathName.length - a.pathName.length);
 
