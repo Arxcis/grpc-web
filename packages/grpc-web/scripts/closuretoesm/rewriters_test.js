@@ -115,7 +115,7 @@ export { UnaryInterceptor, StreamInterceptor };`,
     },
     {
       input: "exports.GenericTransportInterface;",
-      output: "let GenericTransportInterface;",
+      output: "export let GenericTransportInterface;",
     },
   ],
 });
@@ -168,6 +168,17 @@ export { Example };
 let Example = {};
 
 Example = 
+`,
+      input: `
+goog.provide('goog.functions');
+goog.functions.constant = function(retValue) {
+`,
+
+      output: `
+export { functions };
+let functions = {};
+
+functions.constant = function(retValue) {
 `,
     },
   ],
@@ -231,11 +242,11 @@ function Example() {
 `,
       input: `
 goog.module('goog.my.Metadata');
-  let Metadata;
+let Metadata;
 `,
       output: `
 export { Metadata };
-  let Metadata;
+let Metadata;
 `,
     },
   ],

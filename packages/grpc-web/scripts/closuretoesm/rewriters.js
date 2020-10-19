@@ -1,25 +1,13 @@
 const aliases = [
-  [
-    /^goog\.require\('goog\.asserts'\);$/gm,
-    (it) => `const googAsserts = ${it}`,
-  ],
-  [
-    /^goog\.require\('goog\.dom\.asserts'\);$/gm,
-    (it) => `const domAsserts = ${it}`,
-  ],
-  [
-    /^goog\.require\('goog\.debug\.Logger'\);$/gm,
-    (it) => `const debugLogger = ${it}`,
-  ],
-  [
-    /^goog\.require\('goog\.debug\.LogRecord'\);$/gm,
-    (it) => `const debugLogRecord = ${it}`,
-  ],
+  [/^goog\.require\('goog\.asserts'\);$/gm, "googAsserts"],
+  [/^goog\.require\('goog\.dom\.asserts'\);$/gm, "domAsserts"],
+  [/^goog\.require\('goog\.debug\.Logger'\);$/gm, "debugLogger"],
+  [/^goog\.require\('goog\.debug\.LogRecord'\);$/gm, "debugLogRecord"],
 ];
 // @rewriter function
 export function rewriteAliases(filestr) {
-  for (const [pattern, aliaser] of aliases) {
-    filestr = filestr.replace(pattern, aliaser);
+  for (const [pattern, alias] of aliases) {
+    filestr = filestr.replace(pattern, (it) => `const ${alias} = ${it}`);
   }
 
   return [filestr];
@@ -187,18 +175,26 @@ export function rewriteModules(filestr, filename) {
       const [it, , , pathName] = parts;
       const packageName = resolvePackageName(pathName);
       const lastPart = pathName.split(".").pop();
-      paths.push({
-        exportName: lastPart,
-        lastPart,
-        packageName,
-        pathName,
-      });
 
       if (
-        filestr.match(new RegExp(`(class|function|const|let)\\s+${lastPart}`))
+        filestr.match(
+          new RegExp(`^(class|function|const|let)\\s+${lastPart}`, "m")
+        )
       ) {
+        paths.push({
+          exportName: lastPart,
+          lastPart,
+          packageName,
+          pathName,
+        });
         return `export { ${lastPart} };`;
       } else if (filestr.match(new RegExp(`^[ \\t]*${pathName}`, "m"))) {
+        paths.push({
+          exportName: lastPart,
+          lastPart,
+          packageName,
+          pathName,
+        });
         return `export { ${lastPart} };\nlet ${lastPart} = {};\n`;
       } else {
         return ``;
@@ -308,7 +304,7 @@ export function rewriteExports(filestr) {
     // exports.name;
     .replace(/^exports\.(\w+);$/gm, (...parts) => {
       const [, exportName] = parts;
-      return `let ${exportName};`;
+      return `export let ${exportName};`;
     })
 
     // exports.generateHttpHeadersOverwriteParam(headers)); -> generateHttpHeadersOverwriteParam(headers));
