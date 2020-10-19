@@ -101,10 +101,6 @@ testRewriter({
       output: ``,
     },
     {
-      input: `exports.Status = Status;\n`,
-      output: ``,
-    },
-    {
       input: `
 exports = {
   UnaryInterceptor,
@@ -113,36 +109,47 @@ exports = {
       output: `
 export { UnaryInterceptor, StreamInterceptor };`,
     },
-    {
-      input: "exports.GenericTransportInterface;",
-      output: "export let GenericTransportInterface;",
-    },
   ],
 });
 
 testRewriter({
   title:
-    "Given exports.NAME = something, we should rewrite to export const NAME = something",
-  rewriter: rewriteExports,
+    "Given exports.NAME = something, we should rewrite to module.NAME = something",
+  rewriter: rewriteModules,
   cases: [
     {
-      input: "exports.HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
-      output: "export const HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
-    },
-    {
-      input: "exports.generateHttpHeadersOverwriteParam = function(headers) {",
+      input:
+        "goog.module('goog.net.rpc.HttpCors');\nexports.HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
       output:
-        "export const generateHttpHeadersOverwriteParam = function(headers) {",
-    },
-    {
-      input: "exports.generateHttpHeadersOverwriteParam(headers));",
-      output: "generateHttpHeadersOverwriteParam(headers));",
+        "export { HttpCors };\nlet HttpCors = {};\n\nHttpCors.HTTP_HEADERS_PARAM_NAME = '$httpHeaders';",
     },
     {
       input:
-        "  var httpHeaders = exports.generateHttpHeadersOverwriteParam(extraHeaders);",
+        "goog.module('goog.net.rpc.HttpCors');\nexports.generateHttpHeadersOverwriteParam = function(headers) {",
       output:
-        "  var httpHeaders = generateHttpHeadersOverwriteParam(extraHeaders);",
+        "export { HttpCors };\nlet HttpCors = {};\n\nHttpCors.generateHttpHeadersOverwriteParam = function(headers) {",
+    },
+    {
+      input:
+        "goog.module('goog.net.rpc.HttpCors');\nexports.generateHttpHeadersOverwriteParam(headers));",
+      output:
+        "export { HttpCors };\nlet HttpCors = {};\n\nHttpCors.generateHttpHeadersOverwriteParam(headers));",
+    },
+    {
+      input:
+        "goog.module('goog.net.rpc.HttpCors');\n  var httpHeaders = exports.generateHttpHeadersOverwriteParam(extraHeaders);",
+      output:
+        "export { HttpCors };\nlet HttpCors = {};\n\n  var httpHeaders = HttpCors.generateHttpHeadersOverwriteParam(extraHeaders);",
+    },
+    {
+      input:
+        "goog.module('grpc.web.GenericTransportInterface');\nexports.GenericTransportInterface;",
+      output:
+        "export { GenericTransportInterface };\nlet GenericTransportInterface = {};\n\n",
+    },
+    {
+      input: `goog.module('goog.Status');\nexports.Status = Status;\n`,
+      output: `export { Status };\nlet Status = {};\n\n\n`,
     },
   ],
 });
@@ -153,7 +160,7 @@ testRewriter({
   cases: [
     {
       input: `goog.provide('goog.Example');`,
-      output: ``,
+      output: `export { Example };\nlet Example = {};\n`,
     },
     {
       input: `
@@ -199,6 +206,8 @@ goog.Example;
 export { Example };
 let Example = {};
 
+export { Two };
+let Two = {};
 
 
 Example;
@@ -213,7 +222,7 @@ testRewriter({
   cases: [
     {
       input: `goog.module('goog.Example');`,
-      output: ``,
+      output: `export { Example };\nlet Example = {};\n`,
     },
     {
       input: `
@@ -433,6 +442,7 @@ function testRewriter({ title, rewriter, cases }) {
         actual,
         diff: getDifference(output, actual),
       });
+      process.exit(1);
     }
   }
 }

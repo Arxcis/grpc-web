@@ -168,39 +168,56 @@ export function rewriteGoog(filestr) {
 // @rewriter function
 export function rewriteModules(filestr, filename) {
   const paths = [];
-
-  let rewritten = filestr.replace(
-    /^([ \t]*goog.(provide|module)[(]'([\w.]+)'[)]);?$/gm,
-    (...parts) => {
-      const [it, , , pathName] = parts;
+  let module = null;
+  let rewritten = filestr
+    .replace(/^([ \t]*goog.provide[(]'([\w.]+)'[)]);?$/gm, (...parts) => {
+      const [it, , pathName] = parts;
       const packageName = resolvePackageName(pathName);
-      const lastPart = pathName.split(".").pop();
+      const exportName = pathName.split(".").pop();
+
+      paths.push({
+        exportName,
+        packageName,
+        pathName,
+      });
+      return `export { ${exportName} };\nlet ${exportName} = {};\n`;
+    })
+    .replace(/^([ \t]*goog.module[(]'([\w.]+)'[)]);?$/m, (...parts) => {
+      const [it, , pathName] = parts;
+      const packageName = resolvePackageName(pathName);
+      const exportName = pathName.split(".").pop();
+      module = {
+        exportName,
+        packageName,
+        pathName,
+      };
+      paths.push(module);
 
       if (
         filestr.match(
-          new RegExp(`^(class|function|const|let)\\s+${lastPart}`, "m")
+          new RegExp(`^(class|function|const|let)\\s+${exportName}`, "m")
         )
       ) {
-        paths.push({
-          exportName: lastPart,
-          lastPart,
-          packageName,
-          pathName,
-        });
-        return `export { ${lastPart} };`;
-      } else if (filestr.match(new RegExp(`^[ \\t]*${pathName}`, "m"))) {
-        paths.push({
-          exportName: lastPart,
-          lastPart,
-          packageName,
-          pathName,
-        });
-        return `export { ${lastPart} };\nlet ${lastPart} = {};\n`;
+        return `export { ${exportName} };`;
       } else {
-        return ``;
+        return `export { ${exportName} };\nlet ${exportName} = {};\n`;
       }
-    }
-  );
+    });
+
+  // Rewrite exports.NAME statements
+  if (module) {
+    rewritten = rewritten.replace(/exports\.(\w+)(.*)/g, (...parts) => {
+      const [, name, trail] = parts;
+
+      if (name === module.exportName) {
+        return ``;
+      } else {
+        const [, name, trail] = parts;
+        return `${module.exportName}.${name}${trail}`;
+      }
+    });
+  }
+
   rewritten = rewritePathsExceptFilepaths(paths, rewritten);
 
   return [rewritten, paths];
@@ -216,13 +233,13 @@ export function rewriteRequires(filestr, filename) {
     .replace(/^goog.require(Type)?[(]'([\w.]+)'[)];?/gm, (...parts) => {
       const [whole, , pathName] = parts;
       const packageName = resolvePackageName(pathName);
-      const lastPart = pathName.split(".").pop();
+      const exportName = pathName.split(".").pop();
       paths.push({
         pathName,
-        exportName: lastPart,
+        exportName,
       });
 
-      return `import { ${lastPart} } from "./${packageName}.index.js";`;
+      return `import { ${exportName} } from "./${packageName}.index.js";`;
     })
     // (const|var) {?Example}? = googRequire(Type)?('goog.debug.Error');
     .replace(
@@ -289,28 +306,9 @@ export function rewriteExports(filestr) {
       return `export { ${exportNames.join(", ")} };`;
     })
 
-    // exports.name = (''|function()) --> export const name = (''|fun)
-    .replace(/exports\.([\w_]+)\s*=\s*('|function)/g, (...parts) => {
-      const [, exportName, tatOrFunc] = parts;
-      allExports.push({ exportName });
-      return `export const ${exportName} = ${tatOrFunc}`;
-    })
-
-    // exports(.name)? = name;
-    .replace(/exports(\.\w+)?\s*=\s*(\w+);\n/g, (match) => {
+    // exports = name;
+    .replace(/exports\s*=\s*(\w+);\n/g, (match) => {
       return ``;
-    })
-
-    // exports.name;
-    .replace(/^exports\.(\w+);$/gm, (...parts) => {
-      const [, exportName] = parts;
-      return `export let ${exportName};`;
-    })
-
-    // exports.generateHttpHeadersOverwriteParam(headers)); -> generateHttpHeadersOverwriteParam(headers));
-    .replace(/exports\.(\w+)(\(\w*\))/g, (...parts) => {
-      const [match, exportName, funcCall] = parts;
-      return `${exportName}${funcCall}`;
     });
 
   return [rewritten, allExports];
