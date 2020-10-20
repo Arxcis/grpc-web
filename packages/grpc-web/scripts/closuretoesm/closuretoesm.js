@@ -33,6 +33,7 @@ import {
   rewriteEsImports,
   rewriteEsExports,
   rewriteAliases,
+  rewritePathsExceptFilepaths,
 } from "./rewriters.js";
 import {
   execShellCommand,
@@ -77,8 +78,8 @@ async function main() {
   await rewrite(OUT_DIR, provideMap);
   log("Step ✅", "Converted all dependencies to esm-style");
 
-  await cleanup(OUT_DIR);
-  log("Step ✅", "Cleaned up temp .closure.js-files");
+  //await cleanup(OUT_DIR);
+  //log("Step ✅", "Cleaned up temp .closure.js-files");
 }
 
 /**
@@ -152,8 +153,16 @@ async function rewrite(OUT_DIR, provideMap) {
         let res = file.toString();
 
         res = rewriteAliases(res, fileName);
-        res = rewriteModules(res, fileName);
-        res = rewriteRequires(res, fileName, provideMap);
+        const [resmodules, pathsmodules] = rewriteModules(res, fileName);
+        const [resrequires, pathsrequires] = rewriteRequires(
+          resmodules,
+          fileName,
+          provideMap
+        );
+        res = rewritePathsExceptFilepaths(resrequires, [
+          ...pathsmodules,
+          ...pathsrequires,
+        ]);
         res = rewriteExports(res, fileName);
         res = rewriteLegacyNamespace(res, fileName);
         res = rewriteGoog(res, fileName);

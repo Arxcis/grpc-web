@@ -3,6 +3,7 @@ const aliases = [
   [/^goog\.require\('goog\.dom\.asserts'\);$/gm, "domAsserts"],
   [/^goog\.require\('goog\.debug\.Logger'\);$/gm, "debugLogger"],
   [/^goog\.require\('goog\.debug\.LogRecord'\);$/gm, "debugLogRecord"],
+  [/^goog\.require\('goog\.debug\.LogRecord'\);$/gm, "debugLogRecord"],
 ];
 // @rewriter function
 export function rewriteAliases(filestr) {
@@ -222,9 +223,7 @@ export function rewriteModules(filestr, filename) {
     .map(({ exportName }) => exportName)
     .join(", ")} };\n`;
 
-  rewritten = rewritePathsExceptFilepaths(paths, rewritten);
-
-  return rewritten;
+  return [rewritten, paths];
 }
 
 export const REGEX_REQUIRE = /^[ \t]*((const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*)?goog.require(Type)?[(]'([\w.]+)'[)];?[ \t]*$/gm;
@@ -282,9 +281,7 @@ export function rewriteRequires(filestr, filename, provideMap) {
       }
     );
 
-  const reduced = rewritePathsExceptFilepaths(paths, rewritten);
-
-  return reduced;
+  return [rewritten, paths];
 }
 
 /**
@@ -347,15 +344,21 @@ function resolvePackageName(moduleName) {
  * @param {string} path.exportName
  * @param {}
  */
-function rewritePathsExceptFilepaths(paths, filestr) {
+export function rewritePathsExceptFilepaths(filestr, paths) {
   paths.sort((a, b) => b.pathName.length - a.pathName.length);
 
   return paths.reduce(
     (acc, { pathName, exportName }) =>
-      acc.replace(new RegExp("([^/'])(" + pathName + ")", "g"), (...parts) => {
-        const [, prefix] = parts;
-        return `${prefix}${exportName}`;
-      }),
+      acc.replace(
+        new RegExp(
+          "([\\s\\!\\?\\{\\[\\(\\,\\|])(" + pathName.replace(".", "\\.") + ")",
+          "g"
+        ),
+        (...parts) => {
+          const [, prefix, n] = parts;
+          return `${prefix}${exportName}`;
+        }
+      ),
     filestr
   );
 }
