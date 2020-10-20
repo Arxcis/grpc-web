@@ -78,8 +78,8 @@ async function main() {
   await rewrite(OUT_DIR, provideMap);
   log("Step ✅", "Converted all dependencies to esm-style");
 
-  //await cleanup(OUT_DIR);
-  //log("Step ✅", "Cleaned up temp .closure.js-files");
+  await cleanup(OUT_DIR);
+  log("Step ✅", "Cleaned up temp .closure.js-files");
 }
 
 /**
