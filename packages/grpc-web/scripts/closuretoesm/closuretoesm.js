@@ -159,6 +159,7 @@ async function rewrite(OUT_DIR, provideMap) {
           fileName,
           provideMap
         );
+
         res = rewritePathsExceptFilepaths(resrequires, [
           ...pathsmodules,
           ...pathsrequires,

@@ -351,12 +351,14 @@ export function rewritePathsExceptFilepaths(filestr, paths) {
     (acc, { pathName, exportName }) =>
       acc.replace(
         new RegExp(
-          "([\\s\\!\\?\\{\\[\\(\\,\\|])(" + pathName.replace(".", "\\.") + ")",
+          "([\\s\\!\\?\\{\\[\\(\\,\\|])(" +
+            pathName.replace(".", "\\.") +
+            ")([^\\w])",
           "g"
         ),
         (...parts) => {
-          const [, prefix, n] = parts;
-          return `${prefix}${exportName}`;
+          const [, prefix, , suffix] = parts;
+          return `${prefix}${exportName}${suffix}`;
         }
       ),
     filestr
