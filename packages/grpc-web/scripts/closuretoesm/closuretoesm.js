@@ -60,16 +60,24 @@ async function main() {
   await makeIndexJs(OUT_DIR);
   log("Step ✅", "Created index.js");
 
-  await traverseAndCopy(ENTRYPOINT, new Set(), OUT_DIR, INCLUDE_DIRS);
+  const provideMap = new Map();
+  await traverseAndCopy(
+    ENTRYPOINT,
+    new Set(),
+    OUT_DIR,
+    INCLUDE_DIRS,
+    0,
+    provideMap
+  );
   log("Step ✅", "Traversed and copied dependencies");
 
   await patch(OUT_DIR);
   log("Step ✅", "Applied patches");
 
-  await rewrite(OUT_DIR);
+  await rewrite(OUT_DIR, provideMap);
   log("Step ✅", "Converted all dependencies to esm-style");
 
-  //await cleanup(OUT_DIR);
+  await cleanup(OUT_DIR);
   log("Step ✅", "Cleaned up temp .closure.js-files");
 }
 
@@ -79,16 +87,16 @@ async function main() {
  */
 async function provideGoog(OUT_DIR, GOOG_DIR) {
   await Promise.all([
-    copyFile(`${GOOG_DIR}/base.js`, `${OUT_DIR}/base.js`),
-    copyFile(`${GOOG_DIR}/goog.js`, `${OUT_DIR}/goog.js`),
+    copyFile(`${GOOG_DIR}/base.js`, `${OUT_DIR}/goog.base.js`),
+    copyFile(`${GOOG_DIR}/goog.js`, `${OUT_DIR}/goog.goog.js`),
   ]);
 
-  let basejs = (await readFile(`${OUT_DIR}/base.js`)).toString();
+  let basejs = (await readFile(`${OUT_DIR}/goog.base.js`)).toString();
   basejs = basejs.replace(
     "goog.global.CLOSURE_NO_DEPS;",
     "goog.global.CLOSURE_NO_DEPS = true;"
   );
-  await writeFile(`${OUT_DIR}/base.js`, basejs);
+  await writeFile(`${OUT_DIR}/goog.base.js`, basejs);
 }
 
 /**
@@ -128,49 +136,30 @@ async function cleanup(OUT_DIR) {
  * @procedure rewrite()
  *    - Reads all `.closure.js`-files in `OUT_DIR`, and apply rewrite-rules to them.
  *    - Writes `.js`-files back to `OUT_DIR`.
+ *
+ *  @param {string} OUT_DIR
+ *  @param {Map<string,string>} provideMap
  */
-async function rewrite(OUT_DIR) {
+async function rewrite(OUT_DIR, provideMap) {
   {
     const filenames = await readdir(OUT_DIR);
     const closureFiles = filenames.filter((it) => it.endsWith(".closure.js"));
 
     await Promise.all(
       closureFiles.map(async (fileName) => {
-        const outFilename = fileName.replace(".closure.js", ".js");
+        const outFilename = fileName.replace(/\.closure.js$/m, ".js");
         const file = await readFile(join(OUT_DIR, fileName));
         let res = file.toString();
 
         res = rewriteAliases(res, fileName);
-        res = rewriteModules(res[0], fileName);
-        // Re-export in index.js-file
-        await Promise.all(
-          res[1].map(async ({ exportName, packageName }) => {
-            await appendLineToFile(
-              `export { ${exportName} } from \\"./${outFilename}\\";`,
-              `${OUT_DIR}/${packageName}.index.js`
-            );
-          })
-        );
+        res = rewriteModules(res, fileName);
+        res = rewriteRequires(res, fileName, provideMap);
+        res = rewriteExports(res, fileName);
+        res = rewriteLegacyNamespace(res, fileName);
+        res = rewriteGoog(res, fileName);
+        res = rewriteEsImports(res, fileName);
 
-        res = rewriteRequires(res[0], fileName);
-        res = rewriteExports(res[0], fileName);
-
-        // Re-export in index.js-file if not already re-exported
-        const parts = fileName.replace(".closure.js", "").split(".");
-        const packageName = parts.slice(0, parts.length - 1).join(".");
-        await Promise.all(
-          res[1].map(async ({ exportName }) => {
-            await execShellCommand(
-              `echo "export { ${exportName} } from \\"./${outFilename}\\";" >> "${OUT_DIR}/${packageName}.index.js"`
-            );
-          })
-        );
-
-        res = rewriteLegacyNamespace(res[0], fileName);
-        res = rewriteGoog(res[0], fileName);
-        res = rewriteEsImports(res[0], fileName);
-
-        await writeFile(`${OUT_DIR}/${outFilename}`, res[0]);
+        await writeFile(`${OUT_DIR}/${outFilename}`, res);
       })
     );
   }
@@ -194,40 +183,75 @@ async function rewrite(OUT_DIR) {
  *    - Ensures `OUT_DIR` has a flat file hierarchy - no sub-folders.
  *    - Ensures filenames in `OUT_DIR` are `closure module name` + `.js`
  *    - Example: `goog.debug.error.js`
+ *
+ *  @param {string} filepath
+ *  @param {Set<string>} seen
+ *  @param {string} OUT_DIR
+ *  @param {string[]} INCLUDE_DIRS
+ *  @param {number} depth
+ *  @param {Map<string,string>} provideMap
  */
 async function traverseAndCopy(
   filepath,
   seen,
   OUT_DIR,
   INCLUDE_DIRS,
-  depth = 0
+  depth,
+  provideMap
 ) {
+  // 0. Read file
   const file = await readFile(filepath);
   const filestr = file.toString();
 
-  const moduleMatches = filestr.match(/^goog.(module|provide)\('([\w.]+)'\)/m);
-  if (!moduleMatches) {
+  // 1. Flatten paths "grpc/web/abstractclientbase.js"- => "grpc.web.abstractclientbase.js"
+  const jsFilename = INCLUDE_DIRS.reduce(
+    (acc, it) => acc.replace(it + "/", ""),
+    filepath
+  )
+    .replace(/(\w)\/(\w)/g, (...parts) => {
+      const [, left, right] = parts;
+      return `${left}.${right}`;
+    })
+    .replace(/^\w/m, (it) => `./${it}`);
+
+  const closureFilename = jsFilename.replace(/\.js$/m, ".closure.js");
+
+  // 2. Find all `goog.module(<provide-path>)`- and `goog.provide(<provide-path>)`-statements in file
+  const provideMatches = [
+    ...filestr.matchAll(/^goog.(module|provide)\('([\w.]+)'\);$/gm),
+  ].map((it) => it.slice(0, 3));
+  if (provideMatches.length === 0) {
     log("Failed to find a module declaration in", filepath);
     return;
   }
-  const moduleName = moduleMatches.pop();
-  const outFilename = filepath.split("/").pop().replace(".js", ".closure.js");
-  const parts = moduleName.split(".");
-  const packageName = parts.slice(0, parts.length - 1).join(".");
-  const outFullFilename = `${packageName}.${outFilename}`;
 
-  await writeFile(`${OUT_DIR}/${outFullFilename}`, filestr);
+  // 3. Store the <provide-path> => <filename> mappings. (many-to-one-relationship)
+  //
+  // Example map:
+  //  'grpc.web.Exports' => './exports.js',
+  //  'grpc.web.AbstractClientBase' => './grpc.web.abstractclientbase.js'
+  //
+  for (const [, , providePath] of provideMatches) {
+    provideMap.set(providePath, jsFilename);
+  }
 
+  // 4. Write file to new location, completing the copy
+  await writeFile(`${OUT_DIR}/${closureFilename}`, filestr);
+
+  // 5. Find all requires to figure out where to go next
   const requireMatches = filestr.matchAll(REGEX_REQUIRE);
   const requireNames = [...requireMatches].map((it) => it.pop());
 
+  // 6. Run a search for all require-paths concurrently using Promise.all()
   await Promise.all(
     requireNames.map(async (it) => {
+      // 7. Skip if we have loading this reuquire-path already
       if (seen.has(it)) {
         return;
       }
       seen.add(it);
 
+      // 8. Grep for a single file including our require-path. Expect there to always be one.
       let requireFile;
       try {
         const grep = `grep -iRl "^goog.module('${it}')\\|^goog.provide('${it}')" ${INCLUDE_DIRS.join(
@@ -239,18 +263,21 @@ async function traverseAndCopy(
         return;
       }
 
+      // 9. Skip if we have seen the file before
       requireFile = requireFile.trimEnd();
       if (seen.has(requireFile)) {
         return;
       }
       seen.add(requireFile);
 
+      // 10. Recurse
       await traverseAndCopy(
         requireFile,
         seen,
         OUT_DIR,
         INCLUDE_DIRS,
-        depth + 1
+        depth + 1,
+        provideMap
       );
     })
   );
@@ -296,25 +323,25 @@ async function patch(OUT_DIR) {
     replaceLine(
       "goog.NATIVE_ARRAY_PROTOTYPES =",
       "const NATIVE_ARRAY_PROTOTYPES = TRUSTED_SITE;",
-      `${OUT_DIR}/goog.array.closure.js`
+      `${OUT_DIR}/goog.array.array.closure.js`
     ),
     // Patch 3a:
     deleteLine(
       "goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);",
-      `${OUT_DIR}/goog.array.closure.js`
+      `${OUT_DIR}/goog.array.array.closure.js`
     ),
     // Patch 4: Append some missing to base.js
-    appendLineToFile(`export { goog };`, `${OUT_DIR}/base.js`),
+    appendLineToFile(`export { goog };`, `${OUT_DIR}/goog.base.js`),
     // Patch 5: Append some missing exports and imports to goog.js
     appendLineToFile(
       `
-import { goog } from \\"./base.js\\";
+import { goog } from \\"./goog.base.js\\";
 export const createTrustedTypesPolicy = goog.createTrustedTypesPolicy;
 export const getScriptNonce = goog.getScriptNonce;
 export const FEATURESET_YEAR = goog.FEATURESET_YEAR;
 export const TRUSTED_TYPES_POLICY_NAME = goog.TRUSTED_TYPES_POLICY_NAME;
 `,
-      `${OUT_DIR}/goog.js`
+      `${OUT_DIR}/goog.goog.js`
     ),
 
     /**
@@ -328,7 +355,7 @@ export const TRUSTED_TYPES_POLICY_NAME = goog.TRUSTED_TYPES_POLICY_NAME;
     replaceLine(
       "goog.global.CLOSURE_NO_DEPS;",
       "goog.global.CLOSURE_NO_DEPS = true;",
-      `${OUT_DIR}/base.js`
+      `${OUT_DIR}/goog.base.js`
     ),
     // Patch 7a: Declare ASSUME_NATIVE_PROMISE as local const
     replaceLine(
@@ -348,7 +375,7 @@ export const TRUSTED_TYPES_POLICY_NAME = goog.TRUSTED_TYPES_POLICY_NAME;
     replaceLine(
       "goog.NATIVE_ARRAY_PROTOTYPES",
       "NATIVE_ARRAY_PROTOTYPES",
-      `${OUT_DIR}/goog.array.closure.js`
+      `${OUT_DIR}/goog.array.array.closure.js`
     ),
     // Patch 7b: Rewrite goog.ASSUME_NATIVE_PROMISE -> ASSUME_NATIVE_PROMISE
     replaceLine(

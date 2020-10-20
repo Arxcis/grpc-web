@@ -10,7 +10,7 @@ export function rewriteAliases(filestr) {
     filestr = filestr.replace(pattern, (it) => `const ${alias} = ${it}`);
   }
 
-  return [filestr];
+  return filestr;
 }
 
 // @rewriter function
@@ -44,13 +44,12 @@ export function rewriteEsExports(filestr) {
             .sort((a, b) => a.localeCompare(b))
             .join(", ")} } from ${fromName};`;
         })
-        .sort((a, b) => b.length - a.length)
         .join("\n");
 
       return `${res}\n`;
     }
   );
-  return [rewritten];
+  return rewritten;
 }
 // @rewriter function
 export function rewriteEsImports(filestr) {
@@ -81,13 +80,12 @@ export function rewriteEsImports(filestr) {
             .sort((a, b) => a.localeCompare(b))
             .join(", ")} } from ${fromName};`;
         })
-        .sort((a, b) => b.length - a.length)
         .join("\n");
 
       return `${res}\n`;
     }
   );
-  return [rewritten];
+  return rewritten;
 }
 
 const googSymbols = [
@@ -156,14 +154,14 @@ export function rewriteGoog(filestr) {
   }
   const seenArray = [...seen];
   if (seenArray.length === 0) {
-    return [filestr];
+    return filestr;
   }
 
-  filestr = `${seenArray
-    .map((it) => `import { ${it} } from "./goog.js";`)
+  const rewritten = `${seenArray
+    .map((it) => `import { ${it} } from "./goog.goog.js";`)
     .join("\n")}\n${filestr}`;
 
-  return [filestr];
+  return rewritten;
 }
 
 // @rewriter function
@@ -181,7 +179,7 @@ export function rewriteModules(filestr, filename) {
         packageName,
         pathName,
       });
-      return `let ${exportName} = {};\n`;
+      return `let ${exportName} = {};`;
     })
     .replace(/^([ \t]*goog.module[(]'([\w.]+)'[)]);?$/m, (...parts) => {
       const [it, , pathName] = parts;
@@ -201,7 +199,7 @@ export function rewriteModules(filestr, filename) {
       ) {
         return ``;
       } else {
-        return `let ${exportName} = {};\n`;
+        return `let ${exportName} = {};`;
       }
     });
 
@@ -226,60 +224,67 @@ export function rewriteModules(filestr, filename) {
 
   rewritten = rewritePathsExceptFilepaths(paths, rewritten);
 
-  return [rewritten, paths];
+  return rewritten;
 }
 
 export const REGEX_REQUIRE = /^[ \t]*((const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*)?goog.require(Type)?[(]'([\w.]+)'[)];?[ \t]*$/gm;
 
-// @rewriter function
-export function rewriteRequires(filestr, filename) {
+/**
+ * Rewriter function
+ *
+ * @param {string} filestr
+ * @param {string} filename
+ * @param {Map<string,string>} provideMap
+ */
+export function rewriteRequires(filestr, filename, provideMap) {
   const paths = [];
   const rewritten = filestr
     // ^googRequire(Type)?('goog.debug.Error');
     .replace(/^goog.require(Type)?[(]'([\w.]+)'[)];?/gm, (...parts) => {
-      const [whole, , pathName] = parts;
-      const packageName = resolvePackageName(pathName);
-      const exportName = pathName.split(".").pop();
+      const [, , path] = parts;
+      const exportName = path.split(".").pop();
       paths.push({
-        pathName,
+        pathName: path,
         exportName,
       });
-
-      return `import { ${exportName} } from "./${packageName}.index.js";`;
+      return `import { ${exportName} } from "${provideMap.get(path)}";`;
     })
     // (const|var) {?Example}? = googRequire(Type)?('goog.debug.Error');
     .replace(
       /^(const|var)\s*[{]?\s*(\w+(,\s*\w+)*)\s*[}]?\s*=\s*goog.require(Type)?[(]'([\w.]+)'[)];?$/gm,
       (...parts) => {
-        const [, , varName, , , pathName] = parts;
-        const packageName = resolvePackageName(pathName);
-        const lastPart = pathName.split(".").pop();
+        const [, , varName, , , path] = parts;
+        const lastPart = path.split(".").pop();
 
         const importSymbols = varName.split(",").map((it) => it.trim());
 
         if (importSymbols.length === 1 && importSymbols[0] !== lastPart) {
           paths.push({
-            pathName,
+            pathName: path,
             exportName: importSymbols[0],
           });
-          return `import { ${lastPart} as ${importSymbols[0]} } from "./${packageName}.index.js";`;
+          return `import { ${lastPart} as ${
+            importSymbols[0]
+          } } from "${provideMap.get(path)}";`;
         } else if (importSymbols.length === 1) {
           paths.push({
-            pathName,
+            pathName: path,
             exportName: importSymbols[0],
           });
-          return `import { ${importSymbols[0]} } from "./${packageName}.index.js";`;
+          return `import { ${importSymbols[0]} } from "${provideMap.get(
+            path
+          )}";`;
         } else {
-          return `import { ${importSymbols.join(
-            ", "
-          )} } from "./${packageName}.index.js";`;
+          return `import { ${importSymbols.join(", ")} } from "${provideMap.get(
+            path
+          )}";`;
         }
       }
     );
 
   const reduced = rewritePathsExceptFilepaths(paths, rewritten);
 
-  return [reduced];
+  return reduced;
 }
 
 /**
@@ -300,14 +305,11 @@ export function rewriteRequires(filestr, filename) {
  *   It's a mess
  */
 export function rewriteExports(filestr) {
-  const allExports = [];
-
   // exports = { --> export {
   let rewritten = filestr
     .replace(/exports\s*=\s*\{([\s\w,]+)\};/, (...parts) => {
       const [, exportNameStr] = parts;
       const exportNames = exportNameStr.split(",").map((it) => it.trim());
-      allExports.push(...exportNames.map((it) => ({ exportName: it })));
 
       return `export { ${exportNames.join(", ")} };`;
     })
@@ -317,7 +319,7 @@ export function rewriteExports(filestr) {
       return ``;
     });
 
-  return [rewritten, allExports];
+  return rewritten;
 }
 
 // @rewriter function
@@ -326,7 +328,7 @@ export function rewriteLegacyNamespace(filestr) {
     /^[ \t]*goog[.]module[.]declareLegacyNamespace[(][)];?$/m,
     () => ""
   );
-  return [rewritten];
+  return rewritten;
 }
 
 // @helper function
