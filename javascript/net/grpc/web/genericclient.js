@@ -2,17 +2,14 @@
  * @fileoverview base interface for grpc web GenericClient.
  */
 
-goog.module('grpc.web.GenericClient');
-goog.module.declareLegacyNamespace();
-
-const MethodDescriptor = goog.require('grpc.web.MethodDescriptor');
-const Request = goog.require('grpc.web.Request');
-const UnaryResponse = goog.require('grpc.web.UnaryResponse');
+import { MethodDescriptor } from "./methoddescriptor.js"
+import { Request } from "./request.js"
+import { UnaryResponse } from "./unaryresponse.js"
 
 /**
  * @interface
  */
-const GenericClient = function() {};
+export const GenericClient = function() {};
 
 
 /**
@@ -37,5 +34,3 @@ GenericClient.prototype.unaryCall = function(request) {};
  * @abstract
  */
 GenericClient.prototype.call = function(requestMessage, methodDescriptor) {};
-
-exports = GenericClient;

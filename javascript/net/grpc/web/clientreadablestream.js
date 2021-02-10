@@ -26,10 +26,6 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.ClientReadableStream');
-
-goog.module.declareLegacyNamespace();
-
 
 
 /**
@@ -39,7 +35,7 @@ goog.module.declareLegacyNamespace();
  * @template RESPONSE
  * @interface
  */
-const ClientReadableStream = function() {};
+export const ClientReadableStream = function() {};
 
 
 /**
@@ -69,7 +65,3 @@ ClientReadableStream.prototype.removeListener = goog.abstractMethod;
  * Close the stream.
  */
 ClientReadableStream.prototype.cancel = goog.abstractMethod;
-
-
-
-exports = ClientReadableStream;

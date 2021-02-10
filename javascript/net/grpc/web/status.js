@@ -22,14 +22,9 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.Status');
-
-goog.module.declareLegacyNamespace();
-
-
 
 /** @record */
-function Status() {}
+export function Status() {}
 
 /** @export {number} */
 Status.prototype.code;
@@ -39,5 +34,3 @@ Status.prototype.details;
 
 /** @export {(!Object<string, string>|undefined)} */
 Status.prototype.metadata;
-
-exports.Status = Status;

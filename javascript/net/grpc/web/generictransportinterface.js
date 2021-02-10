@@ -23,14 +23,8 @@
  *
  * @author stanleycheung@google.com (Stanley Cheung)
  */
-goog.module('grpc.web.GenericTransportInterface');
-
-goog.module.declareLegacyNamespace();
-
-
-const NodeReadableStream = goog.require('goog.net.streams.NodeReadableStream');
-const XhrIo = goog.require('goog.net.XhrIo');
-
+import NodeReadableStream from "goog.net.streams.NodeReadableStream"; // @TODO How do we even 'esm' this import?
+import XhrIo from "goog.net.XhrIo"; // @TODO
 
 /**
  * @typedef {{
@@ -38,4 +32,4 @@ const XhrIo = goog.require('goog.net.XhrIo');
  *   xhr: (?XhrIo|undefined),
  * }}
  */
-exports.GenericTransportInterface;
+export const GenericTransportInterface;

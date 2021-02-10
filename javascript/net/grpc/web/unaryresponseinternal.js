@@ -1,14 +1,10 @@
 /**
  * @fileoverview gRPC-Web UnaryResponse internal implementation.
  */
-
-goog.module('grpc.web.UnaryResponseInternal');
-goog.module.declareLegacyNamespace();
-
-const Metadata = goog.requireType('grpc.web.Metadata');
-const MethodDescriptor = goog.requireType('grpc.web.MethodDescriptor');
-const UnaryResponse = goog.requireType('grpc.web.UnaryResponse');
-const {Status} = goog.requireType('grpc.web.Status');
+import { Metadata } from "./metadata.js";
+import { MethodDescriptor } from "./methoddescriptor.js";
+import { UnaryResponse } from "./unaryresponse.js";
+import { Status } from "./status.js";
 
 /**
  * @template REQUEST, RESPONSE
@@ -16,7 +12,7 @@ const {Status} = goog.requireType('grpc.web.Status');
  * @final
  * @package
  */
-class UnaryResponseInternal {
+export class UnaryResponseInternal {
   /**
    * @param {RESPONSE} responseMessage
    * @param {!MethodDescriptor<REQUEST, RESPONSE>} methodDescriptor
@@ -69,5 +65,3 @@ class UnaryResponseInternal {
     return this.status_;
   }
 }
-
-exports = UnaryResponseInternal;

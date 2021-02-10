@@ -2,18 +2,15 @@
  * @fileoverview gRPC web client UnaryResponse returned by grpc unary calls.
  */
 
-goog.module('grpc.web.UnaryResponse');
-goog.module.declareLegacyNamespace();
-
-const Metadata = goog.requireType('grpc.web.Metadata');
-const MethodDescriptorInterface = goog.requireType('grpc.web.MethodDescriptorInterface');
-const {Status} = goog.requireType('grpc.web.Status');
+import { Metadata } from "./metadata.js"
+import { MethodDescriptorInterface } from "./methoddescriptorinterface.js"
+import { Status} from "./status.js"
 
 /**
  * @interface
  * @template REQUEST, RESPONSE
  */
-class UnaryResponse {
+export class UnaryResponse {
   /**
    * @export
    * @return {RESPONSE}
@@ -40,5 +37,3 @@ class UnaryResponse {
    */
   getStatus() {}
 }
-
-exports = UnaryResponse;

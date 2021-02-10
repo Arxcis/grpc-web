@@ -1,14 +1,11 @@
-goog.module('grpc.web.ClientOptions');
-goog.module.declareLegacyNamespace();
-
-const {StreamInterceptor, UnaryInterceptor} = goog.require('grpc.web.Interceptor');
+import { StreamInterceptor, UnaryInterceptor } from "./interceptor.js";
 
 
 /**
  * Options that are availavle during the client construction.
  * @record
  */
-class ClientOptions {
+export class ClientOptions {
   constructor() {
     /**
      * Whether to use the HttpCors library to pack http headers into a special
@@ -46,5 +43,3 @@ class ClientOptions {
     this.format;
   }
 }
-
-exports = ClientOptions;

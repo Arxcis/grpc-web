@@ -1,13 +1,10 @@
 /**
  * @fileoverview Internal implementation of grpc.web.Request.
  */
-goog.module('grpc.web.RequestInternal');
-goog.module.declareLegacyNamespace();
-
-const CallOptions = goog.require('grpc.web.CallOptions');
-const Metadata = goog.require('grpc.web.Metadata');
-const MethodDescriptor = goog.requireType('grpc.web.MethodDescriptor');
-const Request = goog.require('grpc.web.Request');
+import { CallOptions } from "./calloptions.js";
+import { Metadata } from "./methodtype.js";
+import { MethodDescriptor } from "./methoddescriptor.js";
+import { Request } from "./request.js";
 
 /**
  * @template REQUEST, RESPONSE
@@ -15,7 +12,7 @@ const Request = goog.require('grpc.web.Request');
  * @final
  * @package
  */
-class RequestInternal {
+export class RequestInternal {
   /**
    * @param {REQUEST} requestMessage
    * @param {!MethodDescriptor<REQUEST, RESPONSE>} methodDescriptor
@@ -90,5 +87,3 @@ class RequestInternal {
     return this;
   }
 }
-
-exports = RequestInternal;
